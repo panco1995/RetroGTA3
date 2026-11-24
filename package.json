@@ -1,0 +1,21 @@
+{
+  "name": "retrogta3",
+  "version": "0.1.0",
+  "description": "RetroGTA3 - 2D GTA3 复刻（同人）",
+  "main": "index.js",
+  "scripts": {
+    "gen": "node scripts/gen-assets/index.ts",
+    "gen:zoom": "node scripts/dev/zoom-sprites.ts",
+    "predev": "npm run gen",
+    "prebuild": "npm run gen"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "@napi-rs/canvas": "^1.2.0"
+  },
+  "private": true,
+  "devDependencies": {}
+}

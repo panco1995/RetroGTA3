@@ -1,0 +1,88 @@
+# ============================================================
+# RetroGTA3 — .gitignore
+# 原则：源码入库，产物不入库。
+# 所有"可由代码确定性重建"的东西都不进 git，
+# 避免每次调生成器都产生几十个二进制文件的不可读 diff。
+# ============================================================
+
+# ---- 依赖 ----
+node_modules/
+.pnp
+.pnp.js
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# ---- 构建产物 ----
+dist/
+dist-ssr/
+build/
+*.local
+
+# ---- Vite 缓存 ----
+.vite/
+node_modules/.vite/
+
+# ---- 程序化生成的素材 ----
+# 由 `npm run gen` 确定性重建（mulberry32 seed），不入库。
+# dev/build 前会自动执行 predev / prebuild，不需要手动生成。
+public/assets/proc/
+
+# ---- 截图自检产物 ----
+.shots/
+screenshots/
+shot-output/
+
+# ---- Playwright ----
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+.playwright/
+
+# ---- 测试覆盖率 ----
+coverage/
+.nyc_output/
+
+# ---- 环境变量 ----
+.env
+.env.*
+!.env.example
+
+# ---- 编辑器 / IDE ----
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+*.code-workspace
+
+# ---- 系统文件 ----
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+desktop.ini
+
+# ---- 日志 ----
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ---- Tauri（后期桌面版打包）----
+src-tauri/target/
+src-tauri/gen/
+
+# ---- 临时目录 ----
+tmp/
+.cache/
+.temp/
