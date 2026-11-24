@@ -8,7 +8,8 @@
  *   public/assets/proc/atlas.json    图集元数据
  *   public/assets/proc/preview.png   素材总览图（人工核对用）
  */
-import { mkdir, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, readdir, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { AssetWriter, newCanvas, PAL } from './core.ts';
 import { packAtlas } from './atlas.ts';
 import { TILE_BUILDERS, TILE_OVERLAYS } from './tiles.ts';
@@ -117,6 +118,51 @@ for (let i = 0; i < 3; i++) {
 }
 await emit('props/ac_unit', acUnit(), '道具', 'ac_unit');
 await emit('props/water_tower', waterTower(), '道具', 'water_tower');
+
+/* ---------------- 6. 烘焙角色（3D → 2D 烘焙产物） ---------------- */
+/**
+ * 烘焙管线（tools/bake/）的产物：8 方向精灵图 + NPC 换色变体。
+ * 这些是「源资产」，不像地面瓦片那样能靠种子重建，所以要拷进输出目录。
+ * 没烘焙过也不报错 —— 引擎会退回纸片人方案。
+ */
+const BAKED_SRC = 'assets-src/baked';
+const BAKED_DST = `${OUT}/baked`;
+
+async function copyBaked(src: string, dst: string): Promise<number> {
+  const entries = await readdir(src, { withFileTypes: true }).catch(() => []);
+  await mkdir(dst, { recursive: true });
+  let n = 0;
+  for (const e of entries) {
+    // textures/ 是换色用的中间贴图，只有烘焙时需要
+    if (e.name === 'textures') continue;
+    const s = join(src, e.name);
+    const d = join(dst, e.name);
+    if (e.isDirectory()) {
+      n += await copyBaked(s, d);
+    } else if (/\.(png|json)$/i.test(e.name)) {
+      await copyFile(s, d);
+      n++;
+    }
+  }
+  return n;
+}
+
+let bakedCount = 0;
+try {
+  bakedCount = await copyBaked(BAKED_SRC, BAKED_DST);
+} catch {
+  bakedCount = 0;
+}
+// 保证 manifest 一定存在（引擎要读它来决定加载哪些 spritesheet）
+await mkdir(BAKED_DST, { recursive: true });
+const bakedManifest = `${BAKED_DST}/manifest.json`;
+const bakedFiles = await readdir(BAKED_DST).catch(() => [] as string[]);
+if (!bakedFiles.includes('manifest.json')) {
+  await writeFile(bakedManifest, JSON.stringify({ animations: [], cell: 0 }, null, 2));
+  console.log('  ⚠ 没找到烘焙角色素材（跑 `npm run bake` 生成），引擎将退回纸片人方案');
+} else {
+  console.log(`✓ 烘焙角色素材：${bakedCount} 个文件 → ${BAKED_DST}/`);
+}
 
 /* ---------------- 输出 ---------------- */
 await mkdir(OUT, { recursive: true });

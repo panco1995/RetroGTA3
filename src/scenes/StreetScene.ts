@@ -1,14 +1,27 @@
 import Phaser from 'phaser';
 import { buildStreet } from '../city/StreetBuilder';
 import { Player } from '../game/Player';
+import { Pedestrians } from '../game/Pedestrians';
+import type { NpcId } from '../assets/baked';
 import { Rect, resolveCircle } from '../game/physics';
 import { Vehicle } from '../game/Vehicle';
 
 const WALK_SPEED = 175;
 
+/** 人行道上的行人（Phase 1 的行人 AI 还没做，先直线来回走） */
+const PEDESTRIAN_SPAWNS = [
+  { id: 'worker' as NpcId, x: -320, y: -170, dir: 1 as const, speed: 34 },
+  { id: 'punk' as NpcId, x: 180, y: -172, dir: -1 as const, speed: 42 },
+  { id: 'lady' as NpcId, x: 620, y: -168, dir: 1 as const, speed: 30 },
+  { id: 'jogger' as NpcId, x: -560, y: 172, dir: -1 as const, speed: 46 },
+  { id: 'oldman' as NpcId, x: 260, y: 168, dir: 1 as const, speed: 26 },
+  { id: 'cop' as NpcId, x: 900, y: 170, dir: -1 as const, speed: 36 },
+];
+
 export class StreetScene extends Phaser.Scene {
   player!: Player;
   car!: Vehicle;
+  pedestrians!: Pedestrians;
 
   private inCar = false;
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
@@ -28,6 +41,9 @@ export class StreetScene extends Phaser.Scene {
     this.player = new Player(this, city.spawn.player.x, city.spawn.player.y);
     this.car = new Vehicle(this, city.spawn.car.x, city.spawn.car.y);
     this.car.setDriverVisible(false);
+
+    // 街上的行人：同一个 3D 模型换不同配色，就是不同的人
+    this.pedestrians = new Pedestrians(this, PEDESTRIAN_SPAWNS);
 
     this.cameras.main.setZoom(0.75);
     this.cameras.main.setBounds(city.bounds.x, city.bounds.y, city.bounds.w, city.bounds.h);
@@ -62,6 +78,7 @@ export class StreetScene extends Phaser.Scene {
     const dt = Math.min(delta / 1000, 0.05);
     if (this.inCar) this.updateDriving(dt);
     else this.updateWalking(dt);
+    this.pedestrians.update(dt);
 
     if (this.hintTimer > 0) {
       this.hintTimer -= dt;

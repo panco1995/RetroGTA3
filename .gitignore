@@ -25,6 +25,13 @@ build/
 .vite/
 node_modules/.vite/
 
+# ---- 烘焙角色素材（入库）----
+# assets-src/baked/*.png 是 CC0 低模烘焙出来的「美术资产」，
+# 跟 CC0 模型本身同级：重新生成要 Playwright + 浏览器，
+# 不能只靠 `npm run gen`（纯 Node）重建，所以要入库。
+# 但换色用的中间贴图（textures/）是纯中间产物，不入库。
+assets-src/baked/textures/
+
 # ---- 程序化生成的素材 ----
 # 由 `npm run gen` 确定性重建（mulberry32 seed），不入库。
 # dev/build 前会自动执行 predev / prebuild，不需要手动生成。

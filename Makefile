@@ -36,7 +36,8 @@ help: ## 显示所有可用任务
 	@printf "\n  示例\n"
 	@printf "    \033[36mmake gen\033[0m                        生成全部程序化素材\n"
 	@printf "    \033[36mmake mission MISSION=portland-01\033[0m  查看单个游戏任务\n"
-	@printf "    \033[36mmake check\033[0m                      跑完整自检（类型+单测+素材+截图）\n"
+	@printf "    \033[36mmake check\033[0m                      跑完整自检（类型+单测+烘焙+素材+截图）\n"
+	@printf "    \033[36mmake bake\033[0m                       把 CC0 低模角色烘焙成 8 方向精灵图\n"
 	@printf "\n"
 
 # ============================================================
@@ -70,6 +71,15 @@ gen-zoom: ## 生成素材放大核对图到 docs/
 	@$(NODE) scripts/dev/zoom-sprites.ts $(GEN_DIR)/actors 3 $(DOC_DIR)/preview-actors.png
 
 assets: gen gen-zoom ## 生成素材 + 放大核对图
+
+preview-characters: ## 生成角色素材预览图到 docs/
+	@$(NODE) scripts/dev/preview-characters.ts $(DOC_DIR)/preview-characters.png
+
+bake: ## 把 CC0 低模角色烘焙成 8 方向精灵图（含 NPC 换色变体）
+	@$(NODE) tools/bake/bake.ts --pitch 60 --cell 96
+
+bake-check: ## 只检查烘焙产物有没有被裁切
+	@$(NODE) tools/bake/bake.ts --pitch 60 --cell 96 --out .tmp/bake-check
 
 # ============================================================
 #  游戏内任务（mission）
@@ -126,7 +136,7 @@ lint: ## 代码风格检查
 		node_modules/.bin/eslint src scripts --ext .ts; \
 	fi
 
-check: typecheck mission-validate test gen shot ## 完整自检：类型 + 任务数据 + 单测 + 素材 + 截图
+check: typecheck mission-validate test bake gen shot ## 完整自检：类型 + 任务数据 + 单测 + 角色烘焙 + 素材 + 截图
 
 # ============================================================
 #  清理
@@ -140,7 +150,7 @@ clean-all: clean ## 连同 node_modules 一起删除
 	@rm -rf node_modules
 	@printf "\n  \033[32m✓\033[0m 已删除 node_modules\n\n"
 
-.PHONY: help doctor install setup gen gen-zoom assets \
+.PHONY: help doctor install setup gen gen-zoom assets bake bake-check \
         missions mission mission-validate \
         dev build preview test test-watch shot typecheck lint check \
         clean clean-all

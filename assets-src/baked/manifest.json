@@ -1,0 +1,121 @@
+{
+  "cell": 96,
+  "cellW": 96,
+  "cellH": 96,
+  "directions": [
+    "N",
+    "NE",
+    "E",
+    "SE",
+    "S",
+    "SW",
+    "W",
+    "NW"
+  ],
+  "frameCount": 8,
+  "pitch": 60,
+  "animations": [
+    "walk",
+    "idle",
+    "run",
+    "death"
+  ],
+  "source": "/assets-src/characters/animated-human/Animated%20Human.fbx",
+  "layout": "row = 方向(0=N 顺时针), col = 帧",
+  "anchor": {
+    "x": 0.5,
+    "y": 0.66
+  },
+  "groups": [
+    {
+      "key": "main",
+      "clips": [
+        {
+          "key": "walk",
+          "clip": "Human Armature|Walk",
+          "range": 1
+        },
+        {
+          "key": "idle",
+          "clip": "Human Armature|Idle",
+          "range": 1
+        },
+        {
+          "key": "run",
+          "clip": "Human Armature|Run",
+          "range": 1
+        }
+      ],
+      "camera": {
+        "visW": 2.1455965909090913,
+        "visH": 2.1455965909090913,
+        "targetY": 0.6865909090909093
+      }
+    },
+    {
+      "key": "death",
+      "clips": [
+        {
+          "key": "death",
+          "clip": "Human Armature|Death",
+          "range": 0.5
+        }
+      ],
+      "camera": {
+        "visW": 2.313878676470588,
+        "visH": 2.313878676470588,
+        "targetY": 0.7404411764705882
+      }
+    }
+  ],
+  "npcs": [
+    {
+      "id": "worker",
+      "animations": [
+        "walk",
+        "idle",
+        "run"
+      ]
+    },
+    {
+      "id": "punk",
+      "animations": [
+        "walk",
+        "idle",
+        "run"
+      ]
+    },
+    {
+      "id": "lady",
+      "animations": [
+        "walk",
+        "idle",
+        "run"
+      ]
+    },
+    {
+      "id": "jogger",
+      "animations": [
+        "walk",
+        "idle",
+        "run"
+      ]
+    },
+    {
+      "id": "oldman",
+      "animations": [
+        "walk",
+        "idle",
+        "run"
+      ]
+    },
+    {
+      "id": "cop",
+      "animations": [
+        "walk",
+        "idle",
+        "run"
+      ]
+    }
+  ]
+}
