@@ -5,6 +5,7 @@ import { Pedestrians } from '../game/Pedestrians';
 import type { NpcId } from '../assets/baked';
 import { Rect, resolveCircle } from '../game/physics';
 import { Vehicle } from '../game/Vehicle';
+import { mountGrade } from '../render/GradePipeline';
 
 const WALK_SPEED = 175;
 
@@ -47,6 +48,8 @@ export class StreetScene extends Phaser.Scene {
     this.cameras.main.setZoom(0.75);
     this.cameras.main.setBounds(city.bounds.x, city.bounds.y, city.bounds.w, city.bounds.h);
     this.cameras.main.startFollow(this.player.root, true, 0.12, 0.12);
+    // 色阶 / 描边 / 暗角只处理世界。文字留在另一台相机上，避免被描边。
+    mountGrade(this);
 
     const kb = this.input.keyboard!;
     this.keys = kb.addKeys('W,A,S,D,SPACE,F') as unknown as Record<
@@ -68,6 +71,13 @@ export class StreetScene extends Phaser.Scene {
       })
       .setScrollFactor(0)
       .setDepth(1000);
+
+    const world = this.children.list.filter((obj) => obj !== this.statusText && obj !== this.hintText);
+    this.cameras.main.ignore([this.statusText, this.hintText]);
+    const ui = this.cameras.add(0, 0, this.scale.width, this.scale.height);
+    ui.transparent = true;
+    ui.setScroll(0, 0);
+    ui.ignore(world);
 
     this.exposeDebugApi();
     (window as unknown as { __GAME_READY__: boolean }).__GAME_READY__ = true;

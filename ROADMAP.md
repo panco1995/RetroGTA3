@@ -28,6 +28,7 @@
       （manifest → BootScene → CAR_RUNTIME → Vehicle），不可硬编码
 - [x] 按角度取帧：角色与载具均按朝向取 spritesheet 帧，精灵本身不旋转
 - [x] 建筑立面程序化生成器（窗框/砖缝/招牌/空调机位）—— 不整块烘焙，楼要能随机组合
+- [x] 统一后处理（描边/暗角/色阶），把烘焙素材和程序化素材拉到同一套质感上
 
 **玩法**
 
@@ -35,15 +36,7 @@
 - [x] 摄像机跟随 + 俯视视角 + 世界边界钳制
 - [x] 上/下车交互，驾驶时隐藏玩家角色
 
-**数据**
-
-- [x] 任务数据层：JSON 任务定义 + 对白 + 校验器（`make mission-validate`）
-
 **验收**：✅ `npm run shot` 产出"角色站在街上、身后有车、视角正常"的截图。
-
-**待办（素材管线）**
-- [ ] 统一后处理（描边/暗角/色阶），把烘焙素材和程序化素材拉到同一套质感上
-
 ---
 
 ## Phase 1 · 沙盒驾驶（Portland 单街区）← 下一步
@@ -75,6 +68,7 @@
 
 ## Phase 3 · 三城 + 全任务
 
+- [x] 任务数据层：JSON 任务定义 + 对白 + 校验器（`make mission-validate`）
 - Portland → Staunton Island → Shoreside Vale 三张地图
 - 48 个主线任务 + 支线（Taxi / Vigilante / Rampage / School Bus / Phone 任务）
 - 隐藏包（100 个）、跳车（Unique Jumps）、武器拾取
