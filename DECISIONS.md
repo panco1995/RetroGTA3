@@ -268,18 +268,18 @@ npm run shot     # Playwright 无头打开 → 模拟按键 → 截图到 .shots
 **已完成**
 - ✅ 技术选型定稿（本文件）
 - ✅ 阶段路线图（ROADMAP.md）
-- ✅ L1 程序化素材管线跑通，62 张精灵图产出，零额度依赖
+- ✅ L1 程序化素材管线跑通，67 张精灵图打包成单张 atlas（零额度依赖）
+- ✅ 任务数据层：`content/missions/*.json` + 校验器 + 对白文件
+- ✅ **Phase 0 全部完成**：Vite 8 + Phaser 3.90 工程、纸片人 8 方向关键帧动画、车辆 arcade 物理（11 条单测）、Playwright 截图自检闭环
 
-**下一步（Phase 0 剩余）**
+**自检闭环怎么用**
 
 ```bash
-cd /Users/tm00013/RetroGTA3
-npm create vite@latest . -- --template vanilla-ts
-npm i phaser@3.90.0
-npm i -D vitest playwright
-npx playwright install chromium
+npm run shot      # 起 dev server → 无头 Chromium → 模拟按键 → 截图到 .shots/
 ```
 
-然后搭三块地基：① 玩家角色（纸片人 8 方向 + walk 动画）② 车辆（arcade 物理 + 摄像机跟随）③ `npm run shot` 截图自检脚本。
+产出 4 张场景图（初始 / 行走 / 上车 / 驾驶）+ 回读运行时状态 + 捕获页面报错。
+**以后每次改完玩法代码我都自己跑这个看图验收**，不需要你当人肉调试器。
 
-**验收标准：跑 `npm run shot` 能产出一张"角色站在街上、身后有车、视角正常"的截图 —— 那一刻这个项目才算真正启动。**
+**下一步（Phase 1 · 沙盒驾驶）**
+把现在手写死的街道布局换成程序化街区生成，加交通 AI 与行人 AI。

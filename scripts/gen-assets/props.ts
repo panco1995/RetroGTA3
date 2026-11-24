@@ -103,6 +103,76 @@ export function newsstand() {
 
 /* ---------------- 建筑屋顶 ---------------- */
 
+/**
+ * 无边框的屋顶底纹 —— 给大片建筑平铺用。
+ * 单独画边框会在平铺时露出网格，所以边框交给城市构建器画。
+ */
+export function roofSurface(variant: number) {
+  const { canvas, ctx } = newCanvas(128, 128);
+  const rng = mulberry32(400 + variant);
+  const base = variant === 1 ? shade(PAL.roof, 0.06) : PAL.roof;
+  ctx.fillStyle = base;
+  ctx.fillRect(0, 0, 128, 128);
+  // 轻微色块（不同屋面材质），alpha 低一点避免平铺时看出重复
+  for (let i = 0; i < 4; i++) {
+    const x = rng() * 128;
+    const y = rng() * 128;
+    const r = 24 + rng() * 36;
+    ctx.fillStyle = rng() > 0.5 ? shade(base, 0.08) : shade(base, -0.1);
+    ctx.globalAlpha = 0.35;
+    ctx.beginPath();
+    ctx.ellipse(x, y, r, r * 0.72, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  grain(ctx, 128, 128, rng, {
+    count: 800,
+    colors: [shade(base, 0.16), shade(base, -0.18)],
+    sizeMin: 1,
+    sizeMax: 3,
+    alpha: 0.34,
+  });
+  // 屋面板缝
+  ctx.strokeStyle = 'rgba(0,0,0,0.10)';
+  ctx.lineWidth = 2;
+  for (let i = 1; i < 4; i++) {
+    ctx.beginPath();
+    ctx.moveTo((i * 128) / 4, 0);
+    ctx.lineTo((i * 128) / 4, 128);
+    ctx.moveTo(0, (i * 128) / 4);
+    ctx.lineTo(128, (i * 128) / 4);
+    ctx.stroke();
+  }
+  return canvas;
+}
+
+/** 屋顶空调外机（贴花，放到建筑屋顶上） */
+export function acUnit() {
+  const { canvas, ctx } = newCanvas(36, 30);
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.fillRect(4, 22, 30, 6);
+  outlineRR(ctx, 2, 2, 32, 22, 3, '#5b6169', PAL.outline, 2.5);
+  ellipse(ctx, 18, 13, 9, 9, '#41464c', PAL.outline, 2);
+  ellipse(ctx, 18, 13, 4, 4, '#2b2f34');
+  ctx.fillStyle = 'rgba(255,255,255,0.16)';
+  ctx.fillRect(5, 5, 26, 4);
+  return canvas;
+}
+
+/** 屋顶水塔（贴花） */
+export function waterTower() {
+  const { canvas, ctx } = newCanvas(52, 52);
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.fillRect(8, 42, 38, 7);
+  ellipse(ctx, 26, 24, 21, 21, shade(PAL.brick, -0.08), PAL.outline, 3);
+  ellipse(ctx, 20, 18, 11, 10, shade(PAL.brick, 0.16));
+  for (let i = 0; i < 4; i++) {
+    const a = (i / 4) * Math.PI * 2 + 0.7;
+    ellipse(ctx, 26 + Math.cos(a) * 15, 24 + Math.sin(a) * 15, 4, 4, PAL.roofDark, PAL.outline, 2);
+  }
+  return canvas;
+}
+
 export function roof(variant: number) {
   const { canvas, ctx } = newCanvas(128, 128);
   const rng = mulberry32(300 + variant);

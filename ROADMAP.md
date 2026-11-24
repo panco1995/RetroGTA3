@@ -4,20 +4,35 @@
 
 ---
 
-## Phase 0 · 骨架（地基）
+## Phase 0 · 骨架（地基）✅ 已完成
 
 - [x] 固定 32 色调色板（单一事实源）→ `scripts/gen-assets/core.ts`
 - [x] 素材生成器：瓦片 / 建筑 / 车辆 / 角色纸片部件 / 道具 → `npm run gen`
-- [x] 产出 62 张精灵图 + atlas.json + 预览图，零外部额度
+- [x] 产出 67 张精灵图，打包成单张 atlas.png (2048×512) + atlas.json
 - [x] 素材放大核对工具 → `npm run gen:zoom`
 - [x] Makefile：每个命令一个独立 target（`make help` 看全部）
 - [x] 任务数据层：JSON 任务定义 + 校验器（`make mission-validate`）
-- [ ] Vite + TS + Phaser 3.90.0 工程
-- [ ] `npm run shot` → Playwright 截图自检
-- [ ] 角色纸片人 8 方向 + walk 关键帧动画
-- [ ] 摄像机跟随 + 俯视视角
+- [x] Vite 8 + TS + Phaser 3.90.0 工程（`npm run dev` / `npm run build`）
+- [x] `npm run shot` → Playwright 截图自检闭环（4 张场景图 + 运行时状态回读）
+- [x] 角色纸片人：8 方向 + idle/walk/run 关键帧动画（`src/anim/poses.ts`）
+- [x] 车辆 arcade 物理：速度矢量分解 + 抓地力/漂移 + 建筑碰撞（`src/game/physics.ts`）
+- [x] 摄像机跟随 + 俯视视角 + 世界边界钳制
+- [x] 车辆物理单元测试 11 条（`npm run test`）
 
-**验收**：`npm run shot` 产出一张"角色站街上、身后有车、视角正确"的截图。
+**Phase 0 验收**：✅ `npm run shot` 产出"角色站在街上、身后有车、视角正常"的截图。
+
+---
+
+## Phase 1 · 沙盒驾驶（Portland 单街区）← 下一步
+
+- 程序化街区生成（路网 → 地块 → 建筑），不再手写死布局
+- 交通 AI（车流沿路网行驶）+ 行人 AI（沿人行道游走）
+- 车辆性能分级（普通车 / 警车 / 跑车）
+- 玩家上下车判定、上车动画
+- 撞车损伤与维修（Pay'n'Spray）
+- 巷战：路障、跳车、路缘石减速
+
+**验收**：能开车在街上兜圈、撞车有反应、能下车走路、路人车流看起来像活的。
 
 ---
 

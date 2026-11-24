@@ -10,6 +10,7 @@
  */
 import { mkdir, writeFile } from 'node:fs/promises';
 import { AssetWriter, newCanvas, PAL } from './core.ts';
+import { packAtlas } from './atlas.ts';
 import { TILE_BUILDERS, TILE_OVERLAYS } from './tiles.ts';
 import { drawCar, CAR_TYPES } from './vehicles.ts';
 import {
@@ -21,6 +22,7 @@ import {
   torso,
 } from './actors.ts';
 import {
+  acUnit,
   bench,
   buildingSide,
   cone,
@@ -28,9 +30,11 @@ import {
   mailbox,
   newsstand,
   roof,
+  roofSurface,
   streetlight,
   trashcan,
   tree,
+  waterTower,
 } from './props.ts';
 
 const OUT = 'public/assets/proc';
@@ -38,10 +42,13 @@ const writer = new AssetWriter(OUT);
 
 /* 收集到总览图用的条目 */
 const sheetItems: { group: string; label: string; canvas: any; scale: number }[] = [];
+/* 收集到图集打包用的条目 */
+const atlasEntries: { name: string; canvas: any }[] = [];
 
 async function emit(name: string, canvas: any, group: string, label: string, scale = 1) {
   await writer.save(name, canvas);
   sheetItems.push({ group, label, canvas, scale });
+  atlasEntries.push({ name, canvas });
 }
 
 /* ---------------- 1. 地面瓦片 ---------------- */
@@ -105,10 +112,22 @@ for (let i = 0; i < 6; i++) {
   await emit(`buildings/roof_${i}`, roof(i), '建筑', `roof_${i}`, 0.8);
   await emit(`buildings/side_${i}`, buildingSide(i), '建筑', `side_${i}`, 0.8);
 }
+for (let i = 0; i < 3; i++) {
+  await emit(`buildings/roof_surface_${i}`, roofSurface(i), '建筑', `roof_surface_${i}`, 0.8);
+}
+await emit('props/ac_unit', acUnit(), '道具', 'ac_unit');
+await emit('props/water_tower', waterTower(), '道具', 'water_tower');
 
 /* ---------------- 输出 ---------------- */
 await mkdir(OUT, { recursive: true });
-await writeFile(`${OUT}/atlas.json`, JSON.stringify({ frames: writer.frames }, null, 2));
+// 自定义元数据（锚点 ox/oy 等，给引擎用）
+await writeFile(`${OUT}/manifest.json`, JSON.stringify({ frames: writer.frames }, null, 2));
+
+// 打包成 Phaser 图集：1 张 atlas.png + 1 份 atlas.json
+const { atlas, json } = packAtlas(atlasEntries);
+await writeFile(`${OUT}/atlas.png`, atlas.toBuffer('image/png'));
+await writeFile(`${OUT}/atlas.json`, JSON.stringify(json));
+console.log(`✓ 图集打包：${json.frames.length} 帧 → atlas.png (${json.meta.size.w}x${json.meta.size.h})`);
 
 /* 总览图 —— 两遍布局：先算位置，再绘制，避免分组标题压住内容 */
 const SW = 1760;

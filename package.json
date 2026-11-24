@@ -7,15 +7,31 @@
     "gen": "node scripts/gen-assets/index.ts",
     "gen:zoom": "node scripts/dev/zoom-sprites.ts",
     "predev": "npm run gen",
-    "prebuild": "npm run gen"
+    "dev": "vite",
+    "prebuild": "npm run gen",
+    "build": "vite build",
+    "preview": "vite preview",
+    "shot": "node tools/shot/shot.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "missions": "node scripts/dev/missions.ts list",
+    "mission:validate": "node scripts/dev/missions.ts validate"
   },
   "keywords": [],
   "author": "",
   "license": "MIT",
   "type": "module",
   "dependencies": {
-    "@napi-rs/canvas": "^1.2.0"
+    "@napi-rs/canvas": "^1.2.0",
+    "phaser": "^3.90.0"
   },
   "private": true,
-  "devDependencies": {}
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "playwright": "^1.65.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.1"
+  }
 }

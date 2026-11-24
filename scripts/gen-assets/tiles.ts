@@ -31,13 +31,7 @@ function asphalt(seed: number) {
     alpha: 0.5,
   });
   cracks(ctx, TILE, TILE, rng, 3, shade(PAL.asphaltDark, -0.4));
-  // 车道中线（部分变体带）
-  if (seed % 4 === 0) {
-    ctx.fillStyle = shade(PAL.hudYellow, -0.35);
-    ctx.globalAlpha = 0.7;
-    for (let i = 0; i < 4; i++) ctx.fillRect(TILE / 2 - 4, i * 32 + 6, 8, 20);
-    ctx.globalAlpha = 1;
-  }
+  // 注：路面标线不放进瓦片里，由城市构建器按路网单独画
   return canvas;
 }
 

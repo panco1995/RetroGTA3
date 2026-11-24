@@ -126,7 +126,7 @@ lint: ## 代码风格检查
 		node_modules/.bin/eslint src scripts --ext .ts; \
 	fi
 
-check: typecheck mission-validate test gen ## 完整自检：类型 + 任务数据 + 单测 + 素材
+check: typecheck mission-validate test gen shot ## 完整自检：类型 + 任务数据 + 单测 + 素材 + 截图
 
 # ============================================================
 #  清理
