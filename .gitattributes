@@ -1,0 +1,38 @@
+# ============================================================
+#  RetroGTA3 — .gitattributes
+#
+#  为什么要专门配：
+#  1) 模型 / 贴图 / 烘焙产物是二进制，git 绝不能对它们做任何行尾转换，
+#     否则某些机器上 checkout 出来的文件会损坏、烘焙直接失败。
+#  2) Kenney 车模自带的 .obj / .mtl 是 CRLF 文本，保持 CRLF，
+#     免得在 Windows / macOS 之间来回切时被改写（原始素材要原样保留）。
+# ============================================================
+
+# —— 二进制：一律不碰 ——
+*.glb      binary
+*.fbx      binary
+*.png      binary
+*.jpg      binary
+*.jpeg     binary
+*.webp     binary
+*.ico      binary
+*.zip      binary
+*.blend    binary
+*.wav      binary
+*.mp3      binary
+*.ogg      binary
+
+# —— Kenney 车模自带的文本格式：原样保留 CRLF ——
+*.obj      text eol=crlf
+*.mtl      text eol=crlf
+
+# —— 脚本 / 配置：统一 LF ——
+*.ts       text eol=lf
+*.js       text eol=lf
+*.mjs      text eol=lf
+*.json     text eol=lf
+*.md       text eol=lf
+*.html     text eol=lf
+*.css      text eol=lf
+Makefile   text eol=lf
+.gitignore text eol=lf

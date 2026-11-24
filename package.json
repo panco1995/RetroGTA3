@@ -6,6 +6,7 @@
   "scripts": {
     "gen": "node scripts/gen-assets/index.ts",
     "bake": "node tools/bake/bake.ts --pitch 60 --cell 96",
+    "bake:vehicles": "node tools/bake/bake-vehicles.ts",
     "gen:zoom": "node scripts/dev/zoom-sprites.ts",
     "predev": "npm run gen",
     "dev": "vite",
@@ -23,16 +24,19 @@
   "author": "",
   "license": "MIT",
   "type": "module",
+  "engines": {
+    "node": ">=22.18.0"
+  },
   "dependencies": {
-    "@napi-rs/canvas": "^1.2.0",
-    "phaser": "^3.90.0",
-    "three": "^0.187.0"
+    "phaser": "^3.90.0"
   },
   "private": true,
   "devDependencies": {
+    "@napi-rs/canvas": "^1.2.0",
     "@types/node": "^26.6.6",
     "@types/three": "^0.187.0",
     "playwright": "^1.65.1",
+    "three": "^0.187.0",
     "typescript": "^7.0.2",
     "vite": "^8.3.8",
     "vitest": "^5.1.1"

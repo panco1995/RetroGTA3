@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { BAKED_CELL, bakedTextureKey } from '../assets/baked';
+import { BAKED_CELL, CAR_RUNTIME, bakedTextureKey, carTextureKey } from '../assets/baked';
 import type { BakedAnim, NpcId } from '../assets/baked';
 import { StreetScene } from './StreetScene';
 
@@ -42,11 +42,34 @@ export class BootScene extends Phaser.Scene {
     // 用 text 而不是 json 载入：文件缺失时拿到的是 404 页面，
     // JSON.parse 会抛未捕获异常；用 text + try/catch 才能优雅降级。
     this.load.text('baked-manifest', 'assets/proc/baked/manifest.json');
+    this.load.text('car-manifest', 'assets/proc/baked/vehicles/manifest.json');
     this.load.on('loaderror', (file: Phaser.Loader.File) => {
       if (file.key === 'baked-manifest') {
-        console.warn('[RetroGTA3] 没有烘焙角色素材（跑 `npm run bake` 生成），暂用纸片人。');
+        console.warn('[RetroGTA3] 没找到烘焙角色素材（跑 `npm run bake` 生成）。');
+      }
+      if (file.key === 'car-manifest') {
+        console.warn('[RetroGTA3] 没找到烘焙车辆素材（跑 `npm run bake:vehicles` 生成）。');
       }
     });
+  }
+
+  /** 素材缺失时的提示屏（不再退回程序化方案了，那套已经废弃） */
+  private showMissingAssets(lines: string[]): void {
+    this.add
+      .text(640, 300, '素材缺失', {
+        fontFamily: 'monospace',
+        fontSize: '32px',
+        color: '#e9c24a',
+      })
+      .setOrigin(0.5);
+    this.add
+      .text(640, 360, lines.join('\n'), {
+        fontFamily: 'monospace',
+        fontSize: '18px',
+        color: '#8d95a1',
+        align: 'center',
+      })
+      .setOrigin(0.5);
   }
 
   create(): void {
@@ -62,9 +85,24 @@ export class BootScene extends Phaser.Scene {
     const anims = manifest?.animations ?? [];
     const cell = manifest?.cell || BAKED_CELL;
 
-    if (!anims.length) {
-      console.warn('[RetroGTA3] 没有烘焙角色素材，先跑 `npm run bake`；暂用纸片人。');
-      this.scene.start('street');
+    // 车辆 manifest 先解析，因为缺车也得提示
+    const carRaw = this.cache.text.get('car-manifest');
+    let carManifest:
+      | { cell?: number; anchor?: { x: number; y: number }; cars?: { id: string }[] }
+      | undefined;
+    try {
+      carManifest = carRaw ? JSON.parse(carRaw) : undefined;
+    } catch {
+      carManifest = undefined;
+    }
+    const carIds = carManifest?.cars ?? [];
+
+    // 烘焙素材缺失 → 明确提示，不再退回纸片人/程序化车（那套已经废弃）
+    if (!anims.length || !carIds.length) {
+      const lines: string[] = [];
+      if (!anims.length) lines.push('npm run bake            # 角色');
+      if (!carIds.length) lines.push('npm run bake:vehicles   # 载具');
+      this.showMissingAssets(lines);
       return;
     }
 
@@ -75,6 +113,19 @@ export class BootScene extends Phaser.Scene {
         frameHeight: cell,
       });
     }
+    // 车辆：32 方向多角度精灵
+    // 单元尺寸和锚点是烘焙脚本按「全部车型的投影范围」算出来的，
+    // 会随车型表变化，所以运行时从 manifest 取，写进 CAR_RUNTIME 给 Vehicle 用。
+    if (carManifest?.cell) CAR_RUNTIME.cell = carManifest.cell;
+    if (carManifest?.anchor) CAR_RUNTIME.anchor = { ...carManifest.anchor };
+    for (const car of carIds) {
+      this.load.spritesheet(
+        carTextureKey(car.id as never),
+        `assets/proc/baked/vehicles/${car.id}.png`,
+        { frameWidth: CAR_RUNTIME.cell, frameHeight: CAR_RUNTIME.cell },
+      );
+    }
+
     // NPC 变体：同一套模型换色烘焙出来的
     for (const npc of manifest?.npcs ?? []) {
       for (const anim of npc.animations) {

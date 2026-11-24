@@ -8,7 +8,7 @@
 import { createCanvas, loadImage } from '@napi-rs/canvas';
 import { readdir, writeFile, mkdir } from 'node:fs/promises';
 
-const dir = process.argv[2] ?? 'public/assets/proc/vehicles';
+const dir = process.argv[2] ?? 'public/assets/proc/tiles';
 const S = Number(process.argv[3] ?? 3);
 const out = process.argv[4] ?? '/tmp/sprites_zoom.png';
 

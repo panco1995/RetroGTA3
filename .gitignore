@@ -42,6 +42,10 @@ public/assets/proc/
 screenshots/
 shot-output/
 
+# ---- 素材放大核对图（纯人工审查用，`make gen-zoom` 随时重建）----
+docs/preview-tiles.png
+docs/preview-props.png
+
 # ---- Playwright ----
 test-results/
 playwright-report/

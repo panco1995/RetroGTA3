@@ -39,16 +39,6 @@ export const BASE_COLORS = {
 
 const key = (c: RGB) => `${c[0]},${c[1]},${c[2]}`;
 
-/** 玩家角色（保留原模型配色） */
-export const PLAYER_PALETTE: NpcPalette = {
-  id: 'player',
-  shirt: BASE_COLORS.shirt,
-  pants: BASE_COLORS.pants,
-  hair: BASE_COLORS.hair,
-  skin: BASE_COLORS.skin,
-  dark: BASE_COLORS.dark,
-};
-
 /** 街道上的 NPC —— 覆盖不同肤色/发色/衣着，方便一眼看出是不同人 */
 export const NPC_PALETTES: NpcPalette[] = [
   {

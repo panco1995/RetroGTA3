@@ -8,20 +8,11 @@
  *   public/assets/proc/atlas.json    图集元数据
  *   public/assets/proc/preview.png   素材总览图（人工核对用）
  */
-import { copyFile, mkdir, readdir, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, readdir, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { AssetWriter, newCanvas, PAL } from './core.ts';
 import { packAtlas } from './atlas.ts';
 import { TILE_BUILDERS, TILE_OVERLAYS } from './tiles.ts';
-import { drawCar, CAR_TYPES } from './vehicles.ts';
-import {
-  ACTOR_PRESETS,
-  actorReference,
-  arm,
-  head,
-  leg,
-  torso,
-} from './actors.ts';
 import {
   acUnit,
   bench,
@@ -40,6 +31,13 @@ import {
 
 const OUT = 'public/assets/proc';
 const writer = new AssetWriter(OUT);
+
+// 生成前先清空整个输出目录。
+// 之前只清了 baked/ 子目录，结果删掉的生成器（比如程序化角色/车辆）留下的旧 PNG
+// 会一直躺在 public 里 —— 没人引用、占体积、还容易让人以为还在用。
+// 整个目录都是可重建的产物，清空最省心。
+await rm(OUT, { recursive: true, force: true });
+await mkdir(OUT, { recursive: true });
 
 /* 收集到总览图用的条目 */
 const sheetItems: { group: string; label: string; canvas: any; scale: number }[] = [];
@@ -63,37 +61,7 @@ for (const [name, builder] of Object.entries(TILE_OVERLAYS)) {
   await emit(`tiles/${name}`, builder(), '地面瓦片', name, 0.55);
 }
 
-/* ---------------- 2. 载具 ---------------- */
-const typeColors: Record<string, string> = {
-  sedan: PAL.carRed,
-  taxi: PAL.carYellow,
-  police: PAL.carWhite,
-  van: PAL.carSilver,
-  truck: PAL.carBlue,
-  sports: PAL.carGreen,
-};
-for (const t of CAR_TYPES) {
-  await emit(`vehicles/${t}`, drawCar(t as any, typeColors[t], seed++), '载具', t);
-}
-// 多色系 sedan
-const extraColors = [PAL.carRed, PAL.carBlue, PAL.carYellow, PAL.carGreen, PAL.carWhite, PAL.carBlack];
-extraColors.forEach((c, i) => {
-  emit(`vehicles/sedan_c${i}`, drawCar('sedan', c, seed++), '载具', 'sedan 多色');
-});
-
-/* ---------------- 3. 角色纸片部件 ---------------- */
-const actorP = ACTOR_PRESETS.player;
-await emit('actors/head', head(actorP), '角色部件', 'head');
-await emit('actors/torso', torso(actorP), '角色部件', 'torso');
-await emit('actors/arm', arm(actorP), '角色部件', 'arm');
-await emit('actors/leg', leg(actorP), '角色部件', 'leg');
-await emit('actors/reference', actorReference(actorP), '角色部件', 'reference', 1.4);
-for (const [key, preset] of Object.entries(ACTOR_PRESETS)) {
-  if (key === 'player') continue;
-  await emit(`actors/${key}_reference`, actorReference(preset), '角色部件', key, 1.4);
-}
-
-/* ---------------- 4. 道具 ---------------- */
+/* ---------------- 2. 道具 ---------------- */
 const propList: [string, () => any][] = [
   ['streetlight', streetlight],
   ['trashcan', trashcan],
@@ -119,11 +87,11 @@ for (let i = 0; i < 3; i++) {
 await emit('props/ac_unit', acUnit(), '道具', 'ac_unit');
 await emit('props/water_tower', waterTower(), '道具', 'water_tower');
 
-/* ---------------- 6. 烘焙角色（3D → 2D 烘焙产物） ---------------- */
+/* ---------------- 6. 烘焙产物（3D → 2D 烘焙） ---------------- */
 /**
- * 烘焙管线（tools/bake/）的产物：8 方向精灵图 + NPC 换色变体。
+ * 烘焙管线（tools/bake/）的产物：8 方向角色精灵图 + 32 方向载具精灵图。
  * 这些是「源资产」，不像地面瓦片那样能靠种子重建，所以要拷进输出目录。
- * 没烘焙过也不报错 —— 引擎会退回纸片人方案。
+ * 没烘焙过也不报错 —— 引擎会显示缺素材提示屏，而不是默默画出更差的替代品。
  */
 const BAKED_SRC = 'assets-src/baked';
 const BAKED_DST = `${OUT}/baked`;
@@ -159,9 +127,15 @@ const bakedManifest = `${BAKED_DST}/manifest.json`;
 const bakedFiles = await readdir(BAKED_DST).catch(() => [] as string[]);
 if (!bakedFiles.includes('manifest.json')) {
   await writeFile(bakedManifest, JSON.stringify({ animations: [], cell: 0 }, null, 2));
-  console.log('  ⚠ 没找到烘焙角色素材（跑 `npm run bake` 生成），引擎将退回纸片人方案');
+  console.log('  ⚠ 没找到烘焙素材（跑 `npm run bake` 和 `npm run bake:vehicles` 生成），引擎会显示缺素材提示屏');
 } else {
-  console.log(`✓ 烘焙角色素材：${bakedCount} 个文件 → ${BAKED_DST}/`);
+  // 注意：这里拷的是 assets-src/baked/ 下的**全部**烘焙产物（角色 + 载具），
+  // 不只是角色。日志要写清楚，免得以为载具没生成。
+  const carFiles = await readdir(`${BAKED_DST}/vehicles`).catch(() => [] as string[]);
+  console.log(
+    `✓ 烘焙素材：${bakedCount} 个文件 → ${BAKED_DST}/` +
+      `（其中载具 ${carFiles.filter((f) => f.endsWith('.png')).length} 款）`,
+  );
 }
 
 /* ---------------- 输出 ---------------- */

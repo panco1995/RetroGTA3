@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import { mulberry32 } from '../core/rng';
 import { Rect } from '../game/physics';
+import { makeCarSprite } from '../game/Vehicle';
+import type { CarId } from '../assets/baked';
 
 export interface City {
   colliders: Rect[];
@@ -206,14 +208,20 @@ export function buildStreet(scene: Phaser.Scene): City {
     scene.add.image(x, y, 'proc', frame).setScale(sc).setDepth(-40);
   }
 
-  // 停靠的车（装饰）
-  const parked: [string, number, number, number][] = [
-    ['vehicles/van', -420, ROAD_TOP + 52, 0],
-    ['vehicles/taxi', 260, ROAD_BOTTOM - 52, Math.PI],
-    ['vehicles/police', 1120, ROAD_TOP + 52, 0],
+  // 停靠的车（装饰）—— 用烘焙出来的多角度精灵，按朝向取帧
+  // 上排朝东（0）、下排朝西（π），符合这条街的车流方向
+  const parked: [CarId, number, number, number][] = [
+    ['delivery', -420, ROAD_TOP + 52, 0],
+    ['taxi', 260, ROAD_BOTTOM - 52, Math.PI],
+    ['police', 1120, ROAD_TOP + 52, 0],
+    ['suvluxury', -980, ROAD_BOTTOM - 52, Math.PI],
+    ['firetruck', -1240, ROAD_BOTTOM - 56, Math.PI],
+    ['race', 640, ROAD_TOP + 50, 0],
+    ['truckflat', 1560, ROAD_TOP + 52, 0],
+    ['truck', -160, ROAD_BOTTOM - 56, Math.PI],
   ];
-  for (const [frame, x, y, rot] of parked) {
-    scene.add.image(x, y, 'proc', frame).setRotation(rot).setDepth(-30);
+  for (const [type, x, y, rot] of parked) {
+    makeCarSprite(scene, type, x, y, rot).setDepth(-30);
   }
 
   return {

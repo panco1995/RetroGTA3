@@ -1,26 +1,19 @@
 import Phaser from 'phaser';
 import { Actor, playerTextures } from './Actor';
-import { CutoutActor } from './CutoutActor';
 
 /**
  * 玩家角色
  *
- * 优先用烘焙精灵（Actor）；如果烘焙素材没生成（没跑过 `npm run bake`），
- * 就退回程序化纸片人（CutoutActor），保证游戏永远能跑起来。
+ * 用烘焙出来的 8 方向精灵（Actor）。素材缺失时由 BootScene 拦住并给出提示，
+ * 不再退回程序化纸片人 —— 那套方案观感太差且已经废弃。
  */
 export class Player {
   root: Phaser.GameObjects.Container;
 
-  private actor: Actor | CutoutActor;
+  private actor: Actor;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    const useBaked = scene.textures.exists('baked_walk');
-    this.actor = useBaked
-      ? new Actor(scene, x, y, playerTextures())
-      : new CutoutActor(scene, x, y);
-    if (!useBaked) {
-      console.warn('[RetroGTA3] 没找到烘焙角色素材，先跑 `npm run bake`；暂用纸片人。');
-    }
+    this.actor = new Actor(scene, x, y, playerTextures());
     this.root = this.actor.root;
   }
 

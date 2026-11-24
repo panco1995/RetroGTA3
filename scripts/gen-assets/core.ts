@@ -33,31 +33,11 @@ export const PAL = {
   brick: '#7b4a3c',
   glass: '#7fa6bb',
   outline: '#15171a',
-  skin: '#c08a60',
-  hair: '#33241b',
-  cloth: '#5f7183',
-  carRed: '#ab3a33',
-  carBlue: '#2d5894',
-  carYellow: '#d6a32e',
-  carGreen: '#3b7844',
-  carWhite: '#d3d0c7',
-  carBlack: '#26262a',
-  carSilver: '#959aa0',
   white: '#f2f0ea',
   hudGreen: '#7edc85',
   hudRed: '#d8493e',
   hudYellow: '#e9c24a',
 } as const;
-
-export const CAR_COLORS: string[] = [
-  PAL.carRed,
-  PAL.carBlue,
-  PAL.carYellow,
-  PAL.carGreen,
-  PAL.carWhite,
-  PAL.carBlack,
-  PAL.carSilver,
-];
 
 /* ------------------------------------------------------------------ */
 /* 随机数 / 噪声                                                       */

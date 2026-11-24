@@ -18,9 +18,6 @@ export const BAKED_CELL = 96;
 /** 每个动画的帧数 */
 export const BAKED_FRAMES = 8;
 
-/** 方向数：0=N 1=NE 2=E 3=SE 4=S 5=SW 6=W 7=NW（顺时针） */
-export const BAKED_DIRS = 8;
-
 /**
  * 脚底锚点在单元里的位置（0=顶部，1=底部）。
  * 烘焙时相机就是按这个点对齐的，所以游戏里把精灵的原点设成它，
@@ -41,9 +38,6 @@ export type BakedAnim = (typeof BAKED_ANIMS)[number];
  */
 export const BAKED_SCALE = 1.2;
 
-/** 角色在世界里的实际身高（像素） */
-export const BAKED_HEIGHT = 58 * BAKED_SCALE;
-
 /** NPC 变体 id（换色得到，见 tools/bake/npc-palettes.ts） */
 export const NPC_IDS = ['worker', 'punk', 'lady', 'jogger', 'oldman', 'cop'] as const;
 export type NpcId = (typeof NPC_IDS)[number];
@@ -57,3 +51,69 @@ export function bakedTextureKey(anim: BakedAnim, npcId?: NpcId): string {
   return npcId ? `baked_npc_${npcId}_${anim}` : `baked_${anim}`;
 }
 
+
+/* ============================================================
+   车辆（Kenney Car Kit → 32 方向精灵）
+   ============================================================ */
+
+/**
+ * 车辆单元尺寸（像素）—— **兜底默认值**。
+ *
+ * 真正的值由烘焙脚本根据「全部车型的实际投影范围」算出来，
+ * 会随车型组合变化（8 款车时是 157px，25 款车时是 175px）。
+ * 所以 BootScene 载入 manifest 后会把真实值写进下面的 `CAR_RUNTIME`，
+ * 引擎一律从 `CAR_RUNTIME` 读，不要直接用这里的常量。
+ */
+export const CAR_CELL = 175;
+
+/** 每辆车的方向数（32 = 11.25° 一档，车转弯才不会一顿一顿） */
+export const CAR_ANGLES = 32;
+
+/** 每格角度步长（弧度） */
+export const CAR_ANGLE_STEP = (Math.PI * 2) / CAR_ANGLES;
+
+/** 车地面中心在单元里的位置（游戏里放精灵要按这个对位）—— 兜底默认值 */
+export const CAR_ANCHOR = { x: 0.5, y: 0.6157 } as const;
+
+/**
+ * 运行时的车辆图集参数。
+ *
+ * 为什么要运行时才知道：烘焙脚本要按**所有车型**的外接范围定一台共用相机，
+ * 单元尺寸和锚点都是算出来的，不是常量。车型表一变，单元就变，
+ * 硬编码在代码里的常量会静默失配（车会浮在地面上方或陷进地里）。
+ * 所以：manifest → BootScene → 这里 → Vehicle。
+ */
+export const CAR_RUNTIME: { cell: number; anchor: { x: number; y: number } } = {
+  cell: CAR_CELL,
+  anchor: { x: CAR_ANCHOR.x, y: CAR_ANCHOR.y },
+};
+
+/** 引擎侧车型 id（对应 assets-src/baked/vehicles/<id>.png） */
+export const CAR_IDS = [
+  'sedan',
+  'taxi',
+  'police',
+  'ambulance',
+  'van',
+  'truck',
+  'sports',
+  'suv',
+  'delivery',
+  'deliveryflat',
+  'truckflat',
+  'firetruck',
+  'garbage',
+  'hatchsports',
+  'race',
+  'racefuture',
+  'suvluxury',
+  'tractor',
+  'tractorpolice',
+  'tractorshovel',
+] as const;
+export type CarId = (typeof CAR_IDS)[number];
+
+/** Phaser 纹理 key */
+export function carTextureKey(id: CarId): string {
+  return `baked_car_${id}`;
+}

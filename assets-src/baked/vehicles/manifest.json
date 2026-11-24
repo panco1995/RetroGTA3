@@ -1,0 +1,127 @@
+{
+  "cell": 175,
+  "angles": 32,
+  "cols": 8,
+  "rows": 4,
+  "pxPerUnit": 32,
+  "objLength": 4,
+  "pitch": 60,
+  "anchor": {
+    "x": 0.5,
+    "y": 0.6157142857142857
+  },
+  "camera": {
+    "visW": 5.46875,
+    "visH": 5.46875,
+    "targetY": 1.2656249999999998
+  },
+  "lengths": {
+    "sedan": 4,
+    "taxi": 4.1,
+    "police": 4.25,
+    "ambulance": 4.4,
+    "van": 4.2,
+    "truck": 4.4,
+    "sports": 3.95,
+    "suv": 4.1,
+    "delivery": 4.35,
+    "deliveryflat": 4.35,
+    "truckflat": 4.3,
+    "firetruck": 4.55,
+    "garbage": 4.55,
+    "hatchsports": 4.05,
+    "race": 4.05,
+    "racefuture": 4.1,
+    "suvluxury": 4.2,
+    "tractor": 3.35,
+    "tractorpolice": 3.5,
+    "tractorshovel": 3.75
+  },
+  "angleStep": 0.19634954084936207,
+  "nativeFront": "+Z",
+  "yawOffset": 0,
+  "cars": [
+    {
+      "id": "sedan",
+      "angles": 32
+    },
+    {
+      "id": "taxi",
+      "angles": 32
+    },
+    {
+      "id": "police",
+      "angles": 32
+    },
+    {
+      "id": "ambulance",
+      "angles": 32
+    },
+    {
+      "id": "van",
+      "angles": 32
+    },
+    {
+      "id": "truck",
+      "angles": 32
+    },
+    {
+      "id": "sports",
+      "angles": 32
+    },
+    {
+      "id": "suv",
+      "angles": 32
+    },
+    {
+      "id": "delivery",
+      "angles": 32
+    },
+    {
+      "id": "deliveryflat",
+      "angles": 32
+    },
+    {
+      "id": "truckflat",
+      "angles": 32
+    },
+    {
+      "id": "firetruck",
+      "angles": 32
+    },
+    {
+      "id": "garbage",
+      "angles": 32
+    },
+    {
+      "id": "hatchsports",
+      "angles": 32
+    },
+    {
+      "id": "race",
+      "angles": 32
+    },
+    {
+      "id": "racefuture",
+      "angles": 32
+    },
+    {
+      "id": "suvluxury",
+      "angles": 32
+    },
+    {
+      "id": "tractor",
+      "angles": 32
+    },
+    {
+      "id": "tractorpolice",
+      "angles": 32
+    },
+    {
+      "id": "tractorshovel",
+      "angles": 32
+    }
+  ],
+  "source": "assets-src/vehicles/kenney-car-kit/Models/GLB",
+  "layout": "col = 角度(k, 0=正右, 顺时针), row = 角度续"
+}

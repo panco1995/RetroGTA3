@@ -40,7 +40,6 @@ export class StreetScene extends Phaser.Scene {
 
     this.player = new Player(this, city.spawn.player.x, city.spawn.player.y);
     this.car = new Vehicle(this, city.spawn.car.x, city.spawn.car.y);
-    this.car.setDriverVisible(false);
 
     // 街上的行人：同一个 3D 模型换不同配色，就是不同的人
     this.pedestrians = new Pedestrians(this, PEDESTRIAN_SPAWNS);
@@ -135,7 +134,6 @@ export class StreetScene extends Phaser.Scene {
       const a = this.car.state.angle;
       this.player.setPosition(this.car.x - Math.cos(a) * 52, this.car.y - Math.sin(a) * 52);
       this.player.setVisible(true);
-      this.car.setDriverVisible(false);
       this.inCar = false;
       this.cameras.main.startFollow(this.player.root, true, 0.12, 0.12);
       this.statusText.setText('步行').setColor('#7edc85');
@@ -149,7 +147,6 @@ export class StreetScene extends Phaser.Scene {
       return;
     }
     this.player.setVisible(false);
-    this.car.setDriverVisible(true);
     this.inCar = true;
     this.cameras.main.startFollow(this.car.container, true, 0.12, 0.12);
     this.statusText.setText('驾驶').setColor('#e9c24a');
