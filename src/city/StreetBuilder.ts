@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { mulberry32 } from '../core/rng';
 import { Rect } from '../game/physics';
 import { makeCarSprite } from '../game/Vehicle';
+import { createFacadeImage, facadeSpec, pickWallHeight, registerFacadeCleanup } from './facade';
 import type { CarId } from '../assets/baked';
 
 export interface City {
@@ -16,7 +17,6 @@ const ROAD_BOTTOM = 135;
 const WALK_TOP = -200;
 const WALK_BOTTOM = 200;
 const BUILDING_DEPTH = 340;
-const WALL_H = 96;
 
 /** 建筑地块：[x, 宽, 屋顶变体] */
 const BLOCKS_TOP: [number, number, number][] = [
@@ -47,6 +47,9 @@ const BLOCKS_BOTTOM: [number, number, number][] = [
  * 改坏了能一眼看出来。
  */
 export function buildStreet(scene: Phaser.Scene): City {
+  // 运行时生成的立面贴图在 scene 关闭时销毁，避免 TextureManager 泄漏
+  registerFacadeCleanup(scene);
+
   const midX = (WORLD.left + WORLD.right) / 2;
   const midY = (WORLD.top + WORLD.bottom) / 2;
   const worldW = WORLD.right - WORLD.left;
@@ -97,14 +100,19 @@ export function buildStreet(scene: Phaser.Scene): City {
   const rng = mulberry32(20241124);
 
   /**
-   * 一栋楼：屋顶（平铺底纹）+ 朝街面的外墙（平铺）+ 屋顶设备贴花
+   * 一栋楼：屋顶（平铺底纹）+ 运行时生成的临街立面 + 屋顶设备贴花
    * top=true 表示在街道北侧，外墙朝下（面向街道）
    */
+  let buildingIndex = 0;
   const addBlock = (x: number, w: number, variant: number, top: boolean) => {
+    const seed = (0x51ed0000 + buildingIndex * 2654435761) >>> 0;
+    buildingIndex++;
+    // 高度只决定能叠几层开间；窗框、砖缝、招牌、空调机位仍由种子组合
+    const wallH = pickWallHeight(seed);
     const depth = BUILDING_DEPTH;
     const y0 = top ? WALK_TOP - depth : WALK_BOTTOM;
-    const roofY0 = top ? y0 : y0 + WALL_H;
-    const roofH = depth - WALL_H;
+    const roofY0 = top ? y0 : y0 + wallH;
+    const roofH = depth - wallH;
     const wallY0 = top ? y0 + roofH : y0;
 
     // 楼体投影
@@ -112,10 +120,11 @@ export function buildStreet(scene: Phaser.Scene): City {
       .rectangle(x + w / 2, roofY0 + roofH / 2 + 16, w, roofH, 0x101318, 0.45)
       .setDepth(-60);
 
-    // 外墙（平铺，不拉伸）
-    scene.add
-      .tileSprite(x + w / 2, wallY0 + WALL_H / 2, w, WALL_H, 'proc', `buildings/side_${variant}`)
-      .setDepth(-56);
+    // 临街立面：按这栋楼的实际宽度现拼，不读预烘焙的整面墙
+    const spec = facadeSpec(w, wallH, seed);
+    const face = createFacadeImage(scene, spec, x + w / 2, wallY0 + wallH / 2).setDepth(-56);
+    // 贴图下沿是店面。南侧楼的店面要朝马路（世界坐标更小的一侧）
+    if (!top) face.setFlipY(true);
 
     // 屋顶（平铺底纹，不带边框，避免露出网格）
     scene.add
@@ -140,7 +149,8 @@ export function buildStreet(scene: Phaser.Scene): City {
       scene.add.image(dx, dy, 'proc', frame).setScale(scale).setDepth(-50);
     }
 
-    colliders.push({ x: x + 8, y: roofY0 + 8, w: w - 16, h: depth - 16 });
+    // 碰撞按整栋占地，不按屋顶。南侧楼的立面在屋顶北边，用 roofY0 会把临街这一截漏掉
+    colliders.push({ x: x + 8, y: y0 + 8, w: w - 16, h: depth - 16 });
   };
   for (const [x, w, v] of BLOCKS_TOP) addBlock(x, w, v, true);
   for (const [x, w, v] of BLOCKS_BOTTOM) addBlock(x, w, v, false);

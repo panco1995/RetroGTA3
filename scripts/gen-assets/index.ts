@@ -16,12 +16,10 @@ import { TILE_BUILDERS, TILE_OVERLAYS } from './tiles.ts';
 import {
   acUnit,
   bench,
-  buildingSide,
   cone,
   hydrant,
   mailbox,
   newsstand,
-  roof,
   roofSurface,
   streetlight,
   trashcan,
@@ -77,10 +75,11 @@ for (const [name, fn] of propList) {
 }
 
 /* ---------------- 5. 建筑 ---------------- */
-for (let i = 0; i < 6; i++) {
-  await emit(`buildings/roof_${i}`, roof(i), '建筑', `roof_${i}`, 0.8);
-  await emit(`buildings/side_${i}`, buildingSide(i), '建筑', `side_${i}`, 0.8);
-}
+/**
+ * 只生成屋顶底纹。临街立面是**运行时**按每栋楼的实际宽度画的
+ * （见 src/city/facade.ts）—— footprint 要等街区生成出来才知道，
+ * 离线烘焙枚举不了所有尺寸。
+ */
 for (let i = 0; i < 3; i++) {
   await emit(`buildings/roof_surface_${i}`, roofSurface(i), '建筑', `roof_surface_${i}`, 0.8);
 }

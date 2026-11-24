@@ -7,37 +7,16 @@
 import { createCanvas } from '@napi-rs/canvas';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
+import { PAL, shade } from '../../src/assets/palette.ts';
 
 export type Ctx = any;
 
 /**
- * 固定调色板（32 色）—— 全项目唯一事实源。
- * 改这里 = 全场换肤。所有生成器只允许从这里取色。
+ * 固定调色板 —— 全项目唯一事实源。
+ * 定义在 `src/assets/palette.ts`，因为运行时的程序化绘制（建筑立面）也要用同一份。
+ * 这里 re-export 是为了让现有调用方不用改 import。
  */
-export const PAL = {
-  asphaltDark: '#262a2f',
-  asphalt: '#363b42',
-  asphaltLight: '#474d55',
-  concrete: '#6f6a5e',
-  sidewalk: '#827c6e',
-  curb: '#9a9384',
-  grassDark: '#37522b',
-  grass: '#4a6c3a',
-  grassLight: '#5c8048',
-  waterDark: '#1f4763',
-  water: '#2b5f80',
-  sandDark: '#9c8759',
-  sand: '#bfa675',
-  roofDark: '#403c35',
-  roof: '#565045',
-  brick: '#7b4a3c',
-  glass: '#7fa6bb',
-  outline: '#15171a',
-  white: '#f2f0ea',
-  hudGreen: '#7edc85',
-  hudRed: '#d8493e',
-  hudYellow: '#e9c24a',
-} as const;
+export { PAL, shade };
 
 /* ------------------------------------------------------------------ */
 /* 随机数 / 噪声                                                       */
@@ -56,26 +35,6 @@ export function wrapDraw(ctx: Ctx, w: number, h: number, fn: (dx: number, dy: nu
 /* ------------------------------------------------------------------ */
 /* 颜色 / 形状工具                                                     */
 /* ------------------------------------------------------------------ */
-
-/** 明暗调整：amt > 0 变亮，amt < 0 变暗 */
-export function shade(hex: string, amt: number): string {
-  const h = hex.replace('#', '');
-  const n = parseInt(h.length === 3 ? h.split('').map((c) => c + c).join('') : h, 16);
-  let r = (n >> 16) & 255;
-  let g = (n >> 8) & 255;
-  let b = n & 255;
-  if (amt >= 0) {
-    r += (255 - r) * amt;
-    g += (255 - g) * amt;
-    b += (255 - b) * amt;
-  } else {
-    r *= 1 + amt;
-    g *= 1 + amt;
-    b *= 1 + amt;
-  }
-  const to = (v: number) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0');
-  return `#${to(r)}${to(g)}${to(b)}`;
-}
 
 /** 圆角矩形路径（不填充、不描边） */
 export function rr(ctx: Ctx, x: number, y: number, w: number, h: number, r: number): void {
