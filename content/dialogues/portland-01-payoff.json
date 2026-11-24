@@ -1,0 +1,10 @@
+{
+  "id": "portland-01-payoff",
+  "mission": "portland-01",
+  "speaker": "dario",
+  "portrait": "dario",
+  "lines": [
+    { "text": "Catalina said you'd come. You're the man in the black car.", "mood": "neutral" },
+    { "text": "Portland's wide open now. Plenty of work if you want it.", "mood": "neutral" }
+  ]
+}

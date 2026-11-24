@@ -1,0 +1,10 @@
+{
+  "id": "portland-01-maria",
+  "mission": "portland-01",
+  "speaker": "maria",
+  "portrait": "maria",
+  "lines": [
+    { "text": "Oh thank god, I thought nobody was coming.", "mood": "relieved" },
+    { "text": "Please, just get me out of here.", "mood": "relieved" }
+  ]
+}

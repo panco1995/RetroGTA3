@@ -1,0 +1,56 @@
+{
+  "id": "portland-01",
+  "title": "Give Me Liberty",
+  "chapter": "Portland",
+  "order": 1,
+  "triggers": [
+    { "type": "startGame" }
+  ],
+  "stages": [
+    {
+      "objective": {
+        "type": "goto",
+        "target": "catalina",
+        "radius": 48,
+        "hint": "去 Portland Harbor 的仓库找 Catalina"
+      },
+      "dialogue": "portland-01-intro"
+    },
+    {
+      "objective": {
+        "type": "driveTo",
+        "target": "maria",
+        "radius": 40,
+        "requireVehicle": true,
+        "hint": "开车去码头停车场接 Maria"
+      },
+      "fail": { "type": "timeout", "seconds": 240 }
+    },
+    {
+      "objective": {
+        "type": "escort",
+        "target": "maria",
+        "radius": 60,
+        "requireVehicle": true,
+        "hint": "把 Maria 送到安全屋"
+      },
+      "dialogue": "portland-01-maria",
+      "fail": { "type": "death", "target": "maria" }
+    },
+    {
+      "objective": {
+        "type": "goto",
+        "target": "dario",
+        "radius": 48,
+        "hint": "去码头尽头找 Dario 拿报酬"
+      },
+      "dialogue": "portland-01-payoff"
+    }
+  ],
+  "rewards": { "money": 0, "stat": "respect" },
+  "unlocks": {
+    "phone": ["catalina"],
+    "vehicle": ["manana"],
+    "area": ["portland_harbor"]
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "portland-01-intro",
+  "mission": "portland-01",
+  "speaker": "catalina",
+  "portrait": "catalina",
+  "lines": [
+    { "text": "Hey, you're the one who needs a job?", "mood": "neutral" },
+    { "text": "A girl called Maria is trapped at the docks. The Triads got her.", "mood": "serious" },
+    { "text": "Go get her. I'll make it worth your while.", "mood": "neutral" }
+  ]
+}

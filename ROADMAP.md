@@ -10,6 +10,8 @@
 - [x] 素材生成器：瓦片 / 建筑 / 车辆 / 角色纸片部件 / 道具 → `npm run gen`
 - [x] 产出 62 张精灵图 + atlas.json + 预览图，零外部额度
 - [x] 素材放大核对工具 → `npm run gen:zoom`
+- [x] Makefile：每个命令一个独立 target（`make help` 看全部）
+- [x] 任务数据层：JSON 任务定义 + 校验器（`make mission-validate`）
 - [ ] Vite + TS + Phaser 3.90.0 工程
 - [ ] `npm run shot` → Playwright 截图自检
 - [ ] 角色纸片人 8 方向 + walk 关键帧动画
