@@ -5,6 +5,8 @@ GTA3 剧情的 2D 俯视复刻（非商业同人项目）。技术栈：TypeScri
 > **版权**：GTA3 的剧情、台词、角色、商标、美术、音频均属 Rockstar Games / DMA Design。
 > 本项目不包含任何原版资源，全部美术素材为 CC0 授权或代码生成。详见 [素材与授权](#素材与授权)。
 
+![街道](screenshots/screenshot-1.png)
+
 ---
 
 ## 文档
@@ -162,6 +164,7 @@ npm scripts：`bake` / `bake:vehicles` / `gen` / `gen:zoom` / `shot` / `test` / 
 | 路径 | 纳入版本控制 | 说明 |
 |---|---|---|
 | `src/` `tools/` `scripts/` `content/` | ✅ | 源码 |
+| `screenshots/` | ✅ | README 用的游戏画面 |
 | `assets-src/baked/**.png` | ✅ | 烘焙产物属美术资产，重建需 Playwright + 浏览器，无法仅靠 `npm run gen` 完成 |
 | `assets-src/characters/` `assets-src/vehicles/` | ✅ | CC0 源模型 |
 | `public/assets/proc/` | ❌ | `npm run gen` 确定性重建 |

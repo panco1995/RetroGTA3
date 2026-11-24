@@ -38,8 +38,8 @@ assets-src/baked/textures/
 public/assets/proc/
 
 # ---- 截图自检产物 ----
+# README 用的画面在 screenshots/，要入库。这里只忽略自动截出来的。
 .shots/
-screenshots/
 shot-output/
 
 # ---- 素材放大核对图（纯人工审查用，`make gen-zoom` 随时重建）----
