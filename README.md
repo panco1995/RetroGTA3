@@ -22,7 +22,10 @@ GTA3 剧情的 2D 俯视复刻（非商业同人项目）。技术栈：TypeScri
 
 ## 现状
 
-- 单场景可玩切片：街道 + 建筑 + 步行 + 上/下车 + 街机式车辆物理 + 6 类 NPC 行人。
+- 单场景可玩切片：程序化街区 + 街道 + 建筑 + 步行 + 上/下车 + 街机式车辆物理。
+- 车流沿路网行驶（靠右车道、路口转向、跟车减速）；行人沿人行道街区段来回走，
+  看到车会逃跑；小地图实时显示路网、建筑、玩家与车流。
+- 撞车会掉车况、冒烟；开进路边的 Pay 'n' Spray 会缓慢维修。
 - 载具与角色动画全部来自离线 3D 烘焙，运行时只加载 2D spritesheet。
 - 任务系统为数据驱动：`content/missions/*.json` + 对白 JSON，配套 schema 校验器。
 
@@ -83,11 +86,17 @@ src/
   game/
     Actor.ts         烘焙精灵角色（多方向动画，按角度取帧）
     Player.ts        玩家
-    Vehicle.ts       载具（多方向，按车头角取帧，精灵不旋转）
-    Pedestrians.ts   NPC 行人
-    physics.ts       街机式车辆物理（速度矢量分解 + 抓地力/漂移）
+    Vehicle.ts       载具（多方向，按车头角取帧，精灵不旋转；车况 / 冒烟 / 维修）
+    Pedestrians.ts   NPC 行人（街区段巡逻 + 看到车逃跑）
+    Traffic.ts       车流（沿路网图行驶，跟车 / 让行）
+    roadGraph.ts     路网图（路口节点 + 邻接，纯数据可单测）
+    physics.ts       街机式车辆物理（速度矢量分解 + 抓地力/漂移 + 性能分级）
   city/
-    StreetBuilder.ts 街道布局装配
+    CityGenerator.ts 程序化街区（路网 → 地块 → 建筑，含地图边缘虚拟街）
+    CityRenderer.ts  把街区数据画进 Phaser
+    StreetBuilder.ts 场景装配 + Pay 'n' Spray 维修位 + 停靠车
+  ui/
+    Minimap.ts       小地图（底图 CanvasTexture + 每帧标记）
   assets/baked.ts    烘焙资产常量（单元尺寸 / 锚点 / 车型表）
   core/rng.ts        确定性 PRNG（mulberry32）
 
@@ -145,13 +154,14 @@ CC0 低模（角色 / 车模）
 | `make doctor` | 环境自检 |
 | `make dev` | 开发服务器（`predev` 自动生成素材） |
 | `make build` | 生产构建（`prebuild` 自动生成素材） |
-| `make check` | 完整自检：typecheck → 任务校验 → 单测 → 角色烘焙 → 载具烘焙自检 → gen → 截图 |
+| `make check` | 完整自检：typecheck → 任务校验 → 单测 → 角色烘焙 → 载具烘焙自检 → gen → 截图（含车流 / 维修断言） |
 | `make bake` | 烘焙角色（多方向动画 + NPC 配色变体） |
 | `make bake-vehicles` | 烘焙载具（多款车型 × 多方向，含裁切与朝向自检） |
 | `make bake-vehicles-check` | 仅运行载具烘焙自检，输出至 `tmp/` |
 | `make gen` | 生成程序化素材并拷贝烘焙产物 |
-| `make shot` | Playwright 截图自检 → `.shots/`，含运行时状态回读与页面错误捕获 |
+| `make shot` | Playwright 截图自检 → `.shots/`，含运行时状态回读、车流位移 / 维修断言与页面错误捕获 |
 | `make preview-characters` / `make preview-vehicles` | 生成核对图至 `docs/` |
+| `make preview-district` | 生成街区布局核对图至 `tmp/`（改生成器参数时先看这张） |
 | `make mission MISSION=portland-01` | 查看单个任务定义 |
 | `make mission-validate` | 校验全部任务 JSON |
 

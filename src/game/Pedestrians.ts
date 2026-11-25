@@ -3,11 +3,11 @@ import { Actor } from './Actor';
 import { BakedAnim, NpcId, bakedTextureKey } from '../assets/baked';
 
 /**
- * 街道上的行人（Phase 1 的雏形）
+ * 街道上的行人
  *
- * 现在只是「沿人行道来回走」的直线运动 —— 真正的行人 AI
- *（避开障碍、路口等待、逃跑）留在 Phase 1。
- * 但素材管线（一个 3D 模型 + 换色表 → 一堆不同的 NPC）在这里已经跑通了。
+ * 每个行人在自己那一截人行道（路口之间）来回走；车冲过来时会
+ * 朝远离车的方向跑一小段。真正的寻路 / 过马路留在后续阶段，
+ * 但「路人看到车会跑」已经足够让街面看起来是活的。
  */
 
 export interface PedestrianSpawn {
@@ -18,46 +18,99 @@ export interface PedestrianSpawn {
   dir: 1 | -1;
   /** 每秒移动的世界像素 */
   speed: number;
+  /** 这一截人行道的范围 */
+  minX: number;
+  maxX: number;
+}
+
+interface Ped {
+  actor: Actor;
+  dir: 1 | -1;
+  baseSpeed: number;
+  minX: number;
+  maxX: number;
+  panic: number;
+  /** 走到这一截尽头后停一下，像在等路口 */
+  pause: number;
 }
 
 export class Pedestrians {
-  private list: { actor: Actor; dir: 1 | -1; speed: number; min: number; max: number }[] = [];
+  private list: Ped[] = [];
 
   constructor(scene: Phaser.Scene, spawns: PedestrianSpawn[]) {
     for (const sp of spawns) {
       const actor = new Actor(scene, sp.x, sp.y, {
         idle: bakedTextureKey('idle', sp.id),
         walk: bakedTextureKey('walk', sp.id),
-        run: bakedTextureKey('walk', sp.id),
+        run: bakedTextureKey('run', sp.id),
       });
       actor.setFacing(sp.dir === 1 ? 0 : Math.PI);
       this.list.push({
         actor,
         dir: sp.dir,
-        speed: sp.speed,
-        min: sp.x - 320,
-        max: sp.x + 320,
+        baseSpeed: sp.speed,
+        minX: sp.minX,
+        maxX: sp.maxX,
+        panic: 0,
+        pause: 0,
       });
     }
   }
 
-  update(dt: number): void {
+  /**
+   * @param threat 玩家车的状态；只有车在动的时候行人才会逃
+   */
+  update(dt: number, threat?: { x: number; y: number; speed: number }): void {
+    const danger = threat && Math.abs(threat.speed) > 40 ? threat : undefined;
+
     for (const p of this.list) {
-      p.actor.setPosition(p.actor.x + p.dir * p.speed * dt, p.actor.y);
-      if (p.actor.x > p.max) {
-        p.dir = -1;
-        p.actor.setFacing(Math.PI);
-      } else if (p.actor.x < p.min) {
-        p.dir = 1;
-        p.actor.setFacing(0);
+      if (danger) {
+        const dx = p.actor.x - danger.x;
+        const dy = p.actor.y - danger.y;
+        if (Math.hypot(dx, dy) < 150) {
+          p.panic = Math.max(p.panic, 1.3);
+          if (Math.abs(dx) > 2) p.dir = dx > 0 ? 1 : -1;
+        }
       }
-      p.actor.update(dt, true, 1);
+
+      const running = p.panic > 0;
+      if (running) p.panic -= dt;
+      if (p.panic > 0) p.pause = 0;
+
+      if (p.pause > 0) {
+        p.pause -= dt;
+        p.actor.setFacing(p.dir === 1 ? 0 : Math.PI);
+        p.actor.update(dt, false, 1);
+        continue;
+      }
+
+      const speed = p.baseSpeed * (running ? 2.5 : 1);
+      p.actor.setPosition(p.actor.x + p.dir * speed * dt, p.actor.y);
+
+      if (p.actor.x > p.maxX) {
+        p.actor.setPosition(p.maxX, p.actor.y);
+        p.dir = -1;
+        p.panic = 0;
+        p.pause = 0.6 + Math.random() * 1.4;
+      } else if (p.actor.x < p.minX) {
+        p.actor.setPosition(p.minX, p.actor.y);
+        p.dir = 1;
+        p.panic = 0;
+        p.pause = 0.6 + Math.random() * 1.4;
+      }
+
+      p.actor.setFacing(p.dir === 1 ? 0 : Math.PI);
+      p.actor.update(dt, true, speed / p.baseSpeed);
     }
   }
 
-  /** 死亡动画（Phase 1 的交通/行人 AI 会用到） */
+  /** 死亡动画（交通/战斗系统会用到） */
   playDeathAll(): void {
     for (const p of this.list) p.actor.playDeath();
+  }
+
+  get count(): number {
+    return this.list.length;
   }
 }
 

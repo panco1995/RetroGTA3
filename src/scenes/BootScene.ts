@@ -13,8 +13,8 @@ import { StreetScene } from './StreetScene';
  * 烘焙素材是「按需」的：manifest 里列了哪些动画就加载哪些，
  * 没烘焙过（没跑 `npm run bake`）也不会报错，引擎会退回纸片人方案。
  */
-/** 行人只用到这两个动画（run 留给 Phase 1 的逃跑行为，省显存） */
-const NPC_ANIMS: BakedAnim[] = ['idle', 'walk'];
+/** 行人只用到这三个动画（run 用于看到车时逃跑，death 留给后续战斗） */
+const NPC_ANIMS: BakedAnim[] = ['idle', 'walk', 'run'];
 
 export class BootScene extends Phaser.Scene {
   constructor() {

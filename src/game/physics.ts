@@ -31,7 +31,24 @@ export interface Rect {
   h: number;
 }
 
-export const VEHICLE = {
+/** 一辆车的性能参数（physics 只认这个，不认车型 id） */
+export interface VehicleSpec {
+  maxSpeed: number;
+  maxReverse: number;
+  engine: number;
+  brake: number;
+  reverseFactor: number;
+  drag: number;
+  grip: number;
+  handbrakeGrip: number;
+  steerRate: number;
+  steerAuthoritySpeed: number;
+  radius: number;
+  bounceKeep: number;
+}
+
+
+export const VEHICLE: VehicleSpec = {
   maxSpeed: 430,
   maxReverse: 150,
   engine: 390,
@@ -51,12 +68,53 @@ export const VEHICLE = {
   bounceKeep: 0.35,
 } as const;
 
+/**
+ * 车辆性能分级。
+ *
+ * 数值刻意保持 arcade 手感：差异体现在「极速 / 加速 / 抓地 / 转向」，
+ * 不做质量、传动比那套仿真。警车比普通车快一点，跑车最快，
+ * 卡车/货车慢但撞起来更稳。
+ */
+export const VEHICLE_SPECS = {
+  normal: VEHICLE,
+  sports: {
+    ...VEHICLE,
+    maxSpeed: 560,
+    engine: 520,
+    grip: 7.6,
+    steerRate: 2.85,
+  },
+  police: {
+    ...VEHICLE,
+    maxSpeed: 510,
+    engine: 470,
+    grip: 7.2,
+    steerRate: 2.7,
+  },
+  heavy: {
+    ...VEHICLE,
+    maxSpeed: 300,
+    maxReverse: 110,
+    engine: 310,
+    brake: 560,
+    grip: 5.2,
+    steerRate: 1.9,
+    radius: 30,
+  },
+} satisfies Record<string, VehicleSpec>;
+
+
 export function createVehicleState(x: number, y: number, angle = 0): VehicleState {
   return { x, y, angle, vx: 0, vy: 0 };
 }
 
 /** 推进一帧，就地修改 state */
-export function stepVehicle(st: VehicleState, input: VehicleInput, dt: number): void {
+export function stepVehicle(
+  st: VehicleState,
+  input: VehicleInput,
+  dt: number,
+  spec: VehicleSpec = VEHICLE,
+): void {
   const fx = Math.cos(st.angle);
   const fy = Math.sin(st.angle);
   const rx = -Math.sin(st.angle);
@@ -66,21 +124,21 @@ export function stepVehicle(st: VehicleState, input: VehicleInput, dt: number): 
   let vr = st.vx * rx + st.vy * ry;
 
   if (input.throttle > 0) {
-    vf += VEHICLE.engine * input.throttle * dt;
+    vf += spec.engine * input.throttle * dt;
   } else if (input.throttle < 0) {
     // 还在往前 → 刹车；已经停住/在倒 → 倒车
-    vf -= (vf > 5 ? VEHICLE.brake : VEHICLE.engine * VEHICLE.reverseFactor) * dt;
+    vf -= (vf > 5 ? spec.brake : spec.engine * spec.reverseFactor) * dt;
   }
 
-  vf -= vf * VEHICLE.drag * dt;
-  vf = Math.max(-VEHICLE.maxReverse, Math.min(VEHICLE.maxSpeed, vf));
+  vf -= vf * spec.drag * dt;
+  vf = Math.max(-spec.maxReverse, Math.min(spec.maxSpeed, vf));
 
-  const grip = input.handbrake ? VEHICLE.handbrakeGrip : VEHICLE.grip;
+  const grip = input.handbrake ? spec.handbrakeGrip : spec.grip;
   vr -= vr * Math.min(1, grip * dt);
 
-  const authority = Math.min(1, Math.abs(vf) / VEHICLE.steerAuthoritySpeed);
+  const authority = Math.min(1, Math.abs(vf) / spec.steerAuthoritySpeed);
   const dir = vf >= 0 ? 1 : -1;
-  st.angle += input.steer * VEHICLE.steerRate * authority * dir * dt;
+  st.angle += input.steer * spec.steerRate * authority * dir * dt;
 
   st.vx = fx * vf + rx * vr;
   st.vy = fy * vf + ry * vr;
@@ -128,13 +186,17 @@ export function resolveCircle(
 }
 
 /** 车辆撞建筑：推出 + 速度衰减 */
-export function resolveCollisions(st: VehicleState, rects: Rect[]): boolean {
-  const r = resolveCircle(st.x, st.y, VEHICLE.radius, rects);
+export function resolveCollisions(
+  st: VehicleState,
+  rects: Rect[],
+  spec: VehicleSpec = VEHICLE,
+): boolean {
+  const r = resolveCircle(st.x, st.y, spec.radius, rects);
   if (!r.hit) return false;
   st.x = r.x;
   st.y = r.y;
-  st.vx *= VEHICLE.bounceKeep;
-  st.vy *= VEHICLE.bounceKeep;
+  st.vx *= spec.bounceKeep;
+  st.vy *= spec.bounceKeep;
   return true;
 }
 

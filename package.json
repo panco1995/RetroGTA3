@@ -18,7 +18,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "missions": "node scripts/dev/missions.ts list",
-    "mission:validate": "node scripts/dev/missions.ts validate"
+    "mission:validate": "node scripts/dev/missions.ts validate",
+    "preview:district": "node scripts/dev/preview-district.ts"
   },
   "keywords": [],
   "author": "",

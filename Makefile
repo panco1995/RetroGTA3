@@ -85,6 +85,9 @@ preview-characters: ## 生成角色素材预览图到 docs/（8 方向 × 8 帧 
 preview-vehicles: ## 生成载具素材预览图到 docs/（20 款车 × 4 正交方向）
 	@$(NODE) scripts/dev/preview-vehicles.ts $(DOC_DIR)/preview-cars.png
 
+preview-district: ## 生成街区布局核对图到 tmp/（路网/地块/建筑朝向）
+	@$(NODE) scripts/dev/preview-district.ts tmp/district-preview.png
+
 bake: ## 烘焙角色：CC0 低模 → 8 方向精灵图（含 NPC 换色变体）
 	@$(NODE) tools/bake/bake.ts --pitch 60 --cell 96
 
@@ -167,7 +170,7 @@ clean-all: clean ## 连同 node_modules 一起删除
 	@printf "\n  \033[32m✓\033[0m 已删除 node_modules\n\n"
 
 .PHONY: help doctor install setup gen gen-zoom assets bake bake-check \
-        bake-vehicles bake-vehicles-check preview-characters preview-vehicles \
+        bake-vehicles bake-vehicles-check preview-characters preview-vehicles preview-district \
         missions mission mission-validate \
         dev build preview test test-watch shot typecheck lint check \
         clean clean-all

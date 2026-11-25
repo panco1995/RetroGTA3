@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   VEHICLE,
+  VEHICLE_SPECS,
   createVehicleState,
   forwardSpeed,
   resolveCircle,
@@ -82,6 +83,30 @@ describe('车辆物理', () => {
     resolveCollisions(st, wall);
     // 半径 26，球心最远能到 100 - 26 = 74
     expect(st.x).toBeLessThanOrEqual(100 - VEHICLE.radius + 0.001);
+  });
+});
+
+describe('车辆性能分级', () => {
+  it('跑车极速高于普通车，普通车高于重车', () => {
+    expect(VEHICLE_SPECS.sports.maxSpeed).toBeGreaterThan(VEHICLE_SPECS.normal.maxSpeed);
+    expect(VEHICLE_SPECS.normal.maxSpeed).toBeGreaterThan(VEHICLE_SPECS.heavy.maxSpeed);
+  });
+
+  it('传入重车参数后速度被压在上限内', () => {
+    const st = createVehicleState(0, 0, 0);
+    for (let i = 0; i < 2000; i++) {
+      stepVehicle(st, { throttle: 1, steer: 0, handbrake: false }, 1 / 60, VEHICLE_SPECS.heavy);
+    }
+    expect(forwardSpeed(st)).toBeLessThanOrEqual(VEHICLE_SPECS.heavy.maxSpeed + 1);
+    expect(forwardSpeed(st)).toBeLessThan(VEHICLE.maxSpeed);
+  });
+
+  it('重车的碰撞半径更大', () => {
+    const st = createVehicleState(10, 0, 0);
+    st.vx = 100;
+    const wall = [{ x: 30, y: -100, w: 40, h: 200 }];
+    resolveCollisions(st, wall, VEHICLE_SPECS.heavy);
+    expect(st.x).toBeLessThanOrEqual(30 - VEHICLE_SPECS.heavy.radius + 0.001);
   });
 });
 

@@ -2,244 +2,139 @@ import Phaser from 'phaser';
 import { mulberry32 } from '../core/rng';
 import { Rect } from '../game/physics';
 import { makeCarSprite } from '../game/Vehicle';
-import { createFacadeImage, facadeSpec, pickWallHeight, registerFacadeCleanup } from './facade';
+import { registerFacadeCleanup } from './facade';
+import {
+  DEFAULT_DISTRICT,
+  generateDistrict,
+  type District,
+  type WalkPoint,
+} from './CityGenerator';
+import { renderDistrict } from './CityRenderer';
 import type { CarId } from '../assets/baked';
+
+export interface RepairPad {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
 
 export interface City {
   colliders: Rect[];
   bounds: { x: number; y: number; w: number; h: number };
   spawn: { player: { x: number; y: number }; car: { x: number; y: number } };
+  /** 人行道上的落脚点（行人 AI 用） */
+  walkers: WalkPoint[];
+  district: District;
+  /** Pay 'n' Spray：停上去缓慢修车 */
+  repairPad: RepairPad;
 }
 
-const WORLD = { left: -1700, right: 1700, top: -1000, bottom: 1000 };
-const ROAD_TOP = -135;
-const ROAD_BOTTOM = 135;
-const WALK_TOP = -200;
-const WALK_BOTTOM = 200;
-const BUILDING_DEPTH = 340;
-
-/** 建筑地块：[x, 宽, 屋顶变体] */
-const BLOCKS_TOP: [number, number, number][] = [
-  [-1450, 380, 0],
-  [-980, 300, 1],
-  [-600, 340, 2],
-  [-180, 260, 0],
-  [160, 320, 1],
-  [560, 300, 2],
-  [940, 420, 0],
-  [1440, 240, 1],
-];
-const BLOCKS_BOTTOM: [number, number, number][] = [
-  [-1500, 300, 1],
-  [-1120, 260, 2],
-  [-780, 360, 0],
-  [-340, 300, 1],
-  [40, 280, 2],
-  [400, 340, 0],
-  [820, 280, 1],
-  [1180, 400, 2],
-];
-
 /**
- * 搭一条演示用的街：路面 + 人行道 + 建筑 + 街具 + 停靠的车
+ * 搭这座城：程序化街区 → 渲染。
  *
- * 布局是写死的（不是随机生成），这样截图自检每次都是同一个画面，
- * 改坏了能一眼看出来。
+ * 路网、地块、建筑布局全部来自 generateDistrict（同 seed 必得同结果），
+ * 这里只负责把数据画出来。
  */
-export function buildStreet(scene: Phaser.Scene): City {
+export function buildStreet(scene: Phaser.Scene, seed = DEFAULT_DISTRICT.seed): City {
   // 运行时生成的立面贴图在 scene 关闭时销毁，避免 TextureManager 泄漏
   registerFacadeCleanup(scene);
 
-  const midX = (WORLD.left + WORLD.right) / 2;
-  const midY = (WORLD.top + WORLD.bottom) / 2;
-  const worldW = WORLD.right - WORLD.left;
-  const worldH = WORLD.bottom - WORLD.top;
+  const district: District = generateDistrict({ seed });
+  const { colliders } = renderDistrict(scene, district, {
+    sidewalk: DEFAULT_DISTRICT.sidewalk,
+    props: true,
+  });
 
-  // 草地底
-  scene.add
-    .tileSprite(midX, midY, worldW, worldH, 'proc', 'tiles/grass_1')
-    .setDepth(-100);
-
-  // 建筑带底色（后院/后巷），避免楼与楼之间露出草地
-  const backDepth = BUILDING_DEPTH + 380;
-  scene.add
-    .tileSprite(midX, WALK_TOP - backDepth / 2 - 15, worldW, backDepth + 30, 'proc', 'tiles/asphalt_2')
-    .setDepth(-96);
-  scene.add
-    .tileSprite(midX, WALK_BOTTOM + backDepth / 2 + 15, worldW, backDepth + 30, 'proc', 'tiles/asphalt_2')
-    .setDepth(-96);
-
-  // 路面
-  scene.add
-    .tileSprite(midX, 0, worldW, ROAD_BOTTOM - ROAD_TOP, 'proc', 'tiles/asphalt_1')
-    .setDepth(-90);
-
-  // 人行道
-  scene.add
-    .tileSprite(midX, (WALK_TOP + ROAD_TOP) / 2, worldW, ROAD_TOP - WALK_TOP, 'proc', 'tiles/sidewalk_0')
-    .setDepth(-88);
-  scene.add
-    .tileSprite(midX, (WALK_BOTTOM + ROAD_BOTTOM) / 2, worldW, WALK_BOTTOM - ROAD_BOTTOM, 'proc', 'tiles/sidewalk_0')
-    .setDepth(-88);
-
-  // 路缘石 + 路面标线
-  const g = scene.add.graphics().setDepth(-85);
-  g.fillStyle(0x9a9384, 1);
-  g.fillRect(WORLD.left, ROAD_TOP - 10, worldW, 10);
-  g.fillRect(WORLD.left, ROAD_BOTTOM, worldW, 10);
-  g.fillStyle(0xd9c24a, 0.85);
-  for (let x = WORLD.left; x < WORLD.right; x += 160) g.fillRect(x, -4, 80, 8);
-  g.fillStyle(0xe6e2d8, 0.55);
-  for (const side of [1, -1]) {
-    for (let x = WORLD.left + 40; x < WORLD.right; x += 320) {
-      g.fillRect(x, side * (ROAD_BOTTOM - 18) - 4, 140, 8);
-    }
-  }
-
-  const colliders: Rect[] = [];
-  const rng = mulberry32(20241124);
-
-  /**
-   * 一栋楼：屋顶（平铺底纹）+ 运行时生成的临街立面 + 屋顶设备贴花
-   * top=true 表示在街道北侧，外墙朝下（面向街道）
-   */
-  let buildingIndex = 0;
-  const addBlock = (x: number, w: number, variant: number, top: boolean) => {
-    const seed = (0x51ed0000 + buildingIndex * 2654435761) >>> 0;
-    buildingIndex++;
-    // 高度只决定能叠几层开间；窗框、砖缝、招牌、空调机位仍由种子组合
-    const wallH = pickWallHeight(seed);
-    const depth = BUILDING_DEPTH;
-    const y0 = top ? WALK_TOP - depth : WALK_BOTTOM;
-    const roofY0 = top ? y0 : y0 + wallH;
-    const roofH = depth - wallH;
-    const wallY0 = top ? y0 + roofH : y0;
-
-    // 楼体投影
-    scene.add
-      .rectangle(x + w / 2, roofY0 + roofH / 2 + 16, w, roofH, 0x101318, 0.45)
-      .setDepth(-60);
-
-    // 临街立面：按这栋楼的实际宽度现拼，不读预烘焙的整面墙
-    const spec = facadeSpec(w, wallH, seed);
-    const face = createFacadeImage(scene, spec, x + w / 2, wallY0 + wallH / 2).setDepth(-56);
-    // 贴图下沿是店面。南侧楼的店面要朝马路（世界坐标更小的一侧）
-    if (!top) face.setFlipY(true);
-
-    // 屋顶（平铺底纹，不带边框，避免露出网格）
-    scene.add
-      .tileSprite(x + w / 2, roofY0 + roofH / 2, w, roofH, 'proc', `buildings/roof_surface_${variant % 3}`)
-      .setDepth(-55);
-
-    // 屋顶轮廓 + 女儿墙
-    const og = scene.add.graphics().setDepth(-52);
-    og.lineStyle(5, 0x2f333a, 1);
-    og.strokeRect(x + 3, roofY0 + 3, w - 6, roofH - 6);
-    og.lineStyle(2, 0x6d7069, 1);
-    og.strokeRect(x + 8, roofY0 + 8, w - 16, roofH - 16);
-
-    // 屋顶设备贴花
-    const decals = 1 + Math.floor(rng() * 3);
-    for (let i = 0; i < decals; i++) {
-      const useTower = rng() > 0.55;
-      const dx = x + 30 + rng() * (w - 60);
-      const dy = roofY0 + 30 + rng() * (roofH - 60);
-      const frame = useTower ? 'props/water_tower' : 'props/ac_unit';
-      const scale = useTower ? 0.9 : 0.85;
-      scene.add.image(dx, dy, 'proc', frame).setScale(scale).setDepth(-50);
-    }
-
-    // 碰撞按整栋占地，不按屋顶。南侧楼的立面在屋顶北边，用 roofY0 会把临街这一截漏掉
-    colliders.push({ x: x + 8, y: y0 + 8, w: w - 16, h: depth - 16 });
+  // 修车点：中间那条横街、路口之间的一侧路缘停车位。
+  // 位置从路网算出来，地图参数一变它跟着走。
+  const realVs = district.streets
+    .filter((s) => s.axis === 'v' && !s.edge)
+    .sort((a, b) => a.pos - b.pos);
+  const realHs = district.streets
+    .filter((s) => s.axis === 'h' && !s.edge)
+    .sort((a, b) => a.pos - b.pos);
+  const hStreet = realHs[Math.floor(realHs.length / 2)];
+  const vi = Math.min(realVs.length - 2, Math.floor(realVs.length / 2));
+  const segL = realVs[vi].pos + realVs[vi].half + 90;
+  const segR = realVs[vi + 1].pos - realVs[vi + 1].half - 90;
+  const repairPad: RepairPad = {
+    x: (segL + segR) / 2,
+    y: hStreet.pos - (hStreet.half - 26),
+    w: 170,
+    h: 54,
   };
-  for (const [x, w, v] of BLOCKS_TOP) addBlock(x, w, v, true);
-  for (const [x, w, v] of BLOCKS_BOTTOM) addBlock(x, w, v, false);
+  drawRepairPad(scene, repairPad);
 
-  // 后排建筑：只画屋顶，压暗一档，让城市看起来有纵深而不是一排纸片
-  const BACK_ROW: [number, number][] = [
-    [-1650, 460],
-    [-1120, 400],
-    [-660, 440],
-    [-160, 400],
-    [300, 420],
-    [790, 400],
-    [1250, 440],
+  // 停靠的车（装饰）—— 用烘焙出来的多角度精灵，按朝向取帧。
+  // 停在路缘车位上，不和行车道/修车点打架。
+  const parkedRng = mulberry32(0x5bf03635);
+  const types: CarId[] = [
+    'delivery',
+    'taxi',
+    'police',
+    'suvluxury',
+    'firetruck',
+    'race',
+    'truckflat',
+    'truck',
   ];
-  const backRng = mulberry32(90210);
-  for (const top of [true, false]) {
-    const y0 = top ? WALK_TOP - BUILDING_DEPTH - 340 : WALK_BOTTOM + BUILDING_DEPTH;
-    for (const [x, w] of BACK_ROW) {
-      const h = 300 + Math.floor(backRng() * 120);
-      scene.add
-        .tileSprite(x + w / 2, y0 + h / 2, w, h, 'proc', 'buildings/roof_surface_1')
-        .setTint(0x9a9a9a)
-        .setDepth(-58);
-      const og = scene.add.graphics().setDepth(-57);
-      og.lineStyle(4, 0x23262b, 1);
-      og.strokeRect(x + 4, y0 + 4, w - 8, h - 8);
+  let ti = 0;
+  for (const s of realHs) {
+    for (const lane of [-1, 1]) {
+      const x = 240 + parkedRng() * (district.bounds.w - 480);
+      const y = s.pos + lane * (s.half - 18);
+      if (Math.hypot(x - repairPad.x, y - repairPad.y) < 130) continue;
+      makeCarSprite(scene, types[ti % types.length], x, y, lane < 0 ? 0 : Math.PI).setDepth(-30);
+      ti++;
     }
   }
 
-  // 街具
-  const props: [string, number, number, number][] = [
-    ['props/streetlight', -1200, ROAD_TOP - 26, 1],
-    ['props/streetlight', -560, ROAD_TOP - 26, 1],
-    ['props/streetlight', 80, ROAD_TOP - 26, 1],
-    ['props/streetlight', 720, ROAD_TOP - 26, 1],
-    ['props/streetlight', -900, ROAD_BOTTOM + 26, 1],
-    ['props/streetlight', -240, ROAD_BOTTOM + 26, 1],
-    ['props/streetlight', 460, ROAD_BOTTOM + 26, 1],
-    ['props/streetlight', 1180, ROAD_BOTTOM + 26, 1],
-    ['props/tree', -1300, ROAD_TOP - 42, 1],
-    ['props/tree', -760, ROAD_TOP - 42, 1],
-    ['props/tree', -80, ROAD_TOP - 42, 1],
-    ['props/tree', 380, ROAD_TOP - 42, 1],
-    ['props/tree', 1020, ROAD_TOP - 42, 1],
-    ['props/tree', -1080, ROAD_BOTTOM + 42, 1],
-    ['props/tree', -420, ROAD_BOTTOM + 42, 1],
-    ['props/tree', 240, ROAD_BOTTOM + 42, 1],
-    ['props/tree', 900, ROAD_BOTTOM + 42, 1],
-    ['props/bench', -880, ROAD_TOP - 30, 1],
-    ['props/bench', -320, ROAD_BOTTOM + 30, 1],
-    ['props/bench', 620, ROAD_TOP - 30, 1],
-    ['props/trashcan', -1040, ROAD_TOP - 24, 1],
-    ['props/trashcan', -160, ROAD_TOP - 24, 1],
-    ['props/trashcan', 540, ROAD_BOTTOM + 24, 1],
-    ['props/hydrant', -700, ROAD_TOP - 22, 1],
-    ['props/hydrant', 940, ROAD_BOTTOM + 22, 1],
-    ['props/mailbox', -460, ROAD_TOP - 26, 1],
-    ['props/mailbox', 1120, ROAD_TOP - 26, 1],
-    ['props/newsstand', -1240, ROAD_BOTTOM + 34, 1],
-    ['props/newsstand', 180, ROAD_BOTTOM + 34, 1],
-    ['props/cone', 300, ROAD_TOP + 40, 1],
-    ['props/cone', 332, ROAD_TOP + 44, 1],
-  ];
-  for (const [frame, x, y, sc] of props) {
-    scene.add.image(x, y, 'proc', frame).setScale(sc).setDepth(-40);
-  }
-
-  // 停靠的车（装饰）—— 用烘焙出来的多角度精灵，按朝向取帧
-  // 上排朝东（0）、下排朝西（π），符合这条街的车流方向
-  const parked: [CarId, number, number, number][] = [
-    ['delivery', -420, ROAD_TOP + 52, 0],
-    ['taxi', 260, ROAD_BOTTOM - 52, Math.PI],
-    ['police', 1120, ROAD_TOP + 52, 0],
-    ['suvluxury', -980, ROAD_BOTTOM - 52, Math.PI],
-    ['firetruck', -1240, ROAD_BOTTOM - 56, Math.PI],
-    ['race', 640, ROAD_TOP + 50, 0],
-    ['truckflat', 1560, ROAD_TOP + 52, 0],
-    ['truck', -160, ROAD_BOTTOM - 56, Math.PI],
-  ];
-  for (const [type, x, y, rot] of parked) {
-    makeCarSprite(scene, type, x, y, rot).setDepth(-30);
-  }
+  // 地图边界：看不见的墙，防止把车开出世界（摄像机有 bounds，但物理没有）
+  const b = district.bounds;
+  const W = 200;
+  colliders.push(
+    { x: b.x - W, y: b.y - W, w: W, h: b.h + W * 2 },
+    { x: b.x + b.w, y: b.y - W, w: W, h: b.h + W * 2 },
+    { x: b.x - W, y: b.y - W, w: b.w + W * 2, h: W },
+    { x: b.x - W, y: b.y + b.h, w: b.w + W * 2, h: W },
+  );
 
   return {
     colliders,
-    bounds: { x: WORLD.left, y: WORLD.top, w: worldW, h: worldH },
-    spawn: {
-      player: { x: -40, y: ROAD_TOP - 34 },
-      car: { x: 60, y: ROAD_TOP + 58 },
-    },
+    bounds: district.bounds,
+    spawn: district.spawn,
+    walkers: district.walkers,
+    district,
+    repairPad,
   };
+}
+
+function drawRepairPad(scene: Phaser.Scene, p: RepairPad): void {
+  const g = scene.add.graphics().setDepth(-35);
+  g.fillStyle(0x153349, 0.92);
+  g.fillRect(p.x - p.w / 2, p.y - p.h / 2, p.w, p.h);
+  g.lineStyle(3, 0x6fc3ff, 0.9);
+  g.strokeRect(p.x - p.w / 2, p.y - p.h / 2, p.w, p.h);
+  // 斜纹
+  g.lineStyle(4, 0x2f6f9c, 0.8);
+  for (let i = -p.h; i < p.w; i += 22) {
+    g.lineBetween(
+      p.x - p.w / 2 + i,
+      p.y + p.h / 2,
+      p.x - p.w / 2 + i + p.h,
+      p.y - p.h / 2,
+    );
+  }
+
+  scene.add
+    .text(p.x, p.y - p.h / 2 - 34, "PAY 'N' SPRAY", {
+      fontFamily: 'monospace',
+      fontSize: '22px',
+      color: '#6fc3ff',
+      stroke: '#0b0d10',
+      strokeThickness: 3,
+    })
+    .setOrigin(0.5)
+    .setDepth(-34);
 }
